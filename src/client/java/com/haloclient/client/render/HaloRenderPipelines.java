@@ -110,6 +110,17 @@ public class HaloRenderPipelines {
                     .build()
     );
 
+    public static final RenderPipeline SPINNER = RenderPipelines.register(
+            RenderPipeline.builder(RenderPipelines.MATRICES_PROJECTION_SNIPPET)
+                    .withLocation(Identifier.fromNamespaceAndPath("halo", "pipeline/spinner"))
+                    .withVertexShader(Identifier.fromNamespaceAndPath("halo", "core/rounded_rect"))
+                    .withFragmentShader(Identifier.fromNamespaceAndPath("halo", "core/spinner"))
+                    .withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
+                    .withCull(false)
+                    .withVertexFormat(ROUNDED_RECT_FORMAT, VertexFormat.Mode.QUADS)
+                    .build()
+    );
+
     public static void init() {
     }
 }

@@ -58,6 +58,7 @@ public final class SpotifyManager {
     private boolean serverRunning = false;
     private volatile MediaStatus currentStatus = MediaStatus.EMPTY;
     private volatile boolean polling = false;
+    private volatile NextTrack nextTrack = NextTrack.EMPTY;
 
     // Local process Spotify API fallback
     private SpotifyAPI localSpotifyAPI;
@@ -81,6 +82,10 @@ public final class SpotifyManager {
 
     public static MediaStatus getStatus() {
         return INSTANCE.currentStatus;
+    }
+
+    public static NextTrack getNextTrack() {
+        return INSTANCE.nextTrack;
     }
 
     public static boolean isConfigured() {
@@ -393,6 +398,11 @@ public final class SpotifyManager {
                     shuffleState = json.get("shuffle_state").getAsBoolean();
                 }
 
+                String repeatState = "off";
+                if (json.has("repeat_state") && !json.get("repeat_state").isJsonNull()) {
+                    repeatState = json.get("repeat_state").getAsString();
+                }
+
                 int volumePercent = 100;
                 if (json.has("device") && !json.get("device").isJsonNull()) {
                     JsonObject device = json.getAsJsonObject("device");
@@ -473,19 +483,74 @@ public final class SpotifyManager {
                             isPlaying,
                             shuffleState,
                             volumePercent,
-                            liked
+                            liked,
+                            repeatState
                     );
+
+                    // Fetch next song from queue
+                    try {
+                        HttpRequest queueRequest = HttpRequest.newBuilder()
+                                .uri(URI.create("https://api.spotify.com/v1/me/player/queue"))
+                                .header("Authorization", "Bearer " + accessToken)
+                                .GET()
+                                .build();
+                        HttpResponse<String> queueResponse = client.send(queueRequest, HttpResponse.BodyHandlers.ofString());
+                        if (queueResponse.statusCode() == 200) {
+                            JsonObject qJson = JsonParser.parseString(queueResponse.body()).getAsJsonObject();
+                            if (qJson.has("queue")) {
+                                var queueArr = qJson.getAsJsonArray("queue");
+                                if (queueArr.size() > 0) {
+                                    JsonObject nextItem = queueArr.get(0).getAsJsonObject();
+                                    String nextTitle = nextItem.get("name").getAsString();
+                                    StringBuilder nextArtists = new StringBuilder();
+                                    if (nextItem.has("artists")) {
+                                        var arr = nextItem.getAsJsonArray("artists");
+                                        for (int aIdx = 0; aIdx < arr.size(); aIdx++) {
+                                            if (aIdx > 0) nextArtists.append(", ");
+                                            nextArtists.append(arr.get(aIdx).getAsJsonObject().get("name").getAsString());
+                                        }
+                                    }
+                                    String nextArtist = nextArtists.toString();
+                                    String nextArtUrl = "";
+                                    if (nextItem.has("album")) {
+                                        JsonObject album = nextItem.getAsJsonObject("album");
+                                        if (album.has("images")) {
+                                            var images = album.getAsJsonArray("images");
+                                            if (images.size() > 0) {
+                                                nextArtUrl = images.get(0).getAsJsonObject().get("url").getAsString();
+                                            }
+                                        }
+                                    }
+                                    String nextArtPath = "";
+                                    if (!nextArtUrl.isEmpty()) {
+                                        nextArtPath = getAndDownloadArt(nextArtUrl);
+                                    }
+                                    nextTrack = new NextTrack(nextTitle, nextArtist, nextArtPath);
+                                } else {
+                                    nextTrack = NextTrack.EMPTY;
+                                }
+                            }
+                        } else {
+                            nextTrack = NextTrack.EMPTY;
+                        }
+                    } catch (Exception ignored) {
+                        nextTrack = NextTrack.EMPTY;
+                    }
                 } else {
                     currentStatus = MediaStatus.EMPTY;
+                    nextTrack = NextTrack.EMPTY;
                 }
             } else if (code == 401) {
                 refreshToken();
+                nextTrack = NextTrack.EMPTY;
             } else {
                 currentStatus = MediaStatus.EMPTY;
+                nextTrack = NextTrack.EMPTY;
             }
         } catch (Exception e) {
             e.printStackTrace();
             currentStatus = MediaStatus.EMPTY;
+            nextTrack = NextTrack.EMPTY;
         }
     }
 
@@ -530,7 +595,7 @@ public final class SpotifyManager {
                     }
                 }
 
-                currentStatus = new MediaStatus(title, artist, position, duration, artPath, trackId != null ? trackId : "", true, false, 100, false);
+                currentStatus = new MediaStatus(title, artist, position, duration, artPath, trackId != null ? trackId : "", true, false, 100, false, "off");
             } else {
                 currentStatus = MediaStatus.EMPTY;
             }
@@ -542,14 +607,16 @@ public final class SpotifyManager {
 
     private String lastArtworkUrl = "";
     private String getAndDownloadArt(String url) {
-        File artFile = new File(Minecraft.getInstance().gameDirectory, "config/spotify-art.png");
-        if (url.equals(lastArtworkUrl) && artFile.exists()) {
+        if (url == null || url.isBlank()) return "";
+        String hash = String.valueOf(Math.abs(url.hashCode()));
+        File artFile = new File(Minecraft.getInstance().gameDirectory, "config/spotify-art-" + hash + ".png");
+        if (artFile.exists()) {
             return artFile.getAbsolutePath();
         }
         try {
             HttpClient client = HttpClient.newHttpClient();
             HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).build();
-            File tempFile = new File(Minecraft.getInstance().gameDirectory, "config/spotify-art-temp.png");
+            File tempFile = new File(Minecraft.getInstance().gameDirectory, "config/spotify-art-temp-" + hash + ".png");
             if (tempFile.exists()) {
                 tempFile.delete();
             }
@@ -559,14 +626,13 @@ public final class SpotifyManager {
             client.send(request, HttpResponse.BodyHandlers.ofFile(tempFile.toPath()));
             if (tempFile.exists()) {
                 Files.move(tempFile.toPath(), artFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                lastArtworkUrl = url;
                 tempFile.delete();
                 return artFile.getAbsolutePath();
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return artFile.exists() ? artFile.getAbsolutePath() : "";
+        return "";
     }
 
     private static Map<String, String> parseFormData(String query) {
@@ -901,7 +967,8 @@ public final class SpotifyManager {
                     currentStatus.positionSeconds(), currentStatus.durationSeconds(),
                     currentStatus.artworkPath(), currentStatus.trackId(),
                     currentStatus.isPlaying(), currentStatus.shuffleState(),
-                    percent, currentStatus.liked()
+                    percent, currentStatus.liked(),
+                    currentStatus.repeatState()
             );
         }
 
@@ -950,7 +1017,8 @@ public final class SpotifyManager {
                         currentStatus.positionSeconds(), currentStatus.durationSeconds(),
                         currentStatus.artworkPath(), currentStatus.trackId(),
                         play, currentStatus.shuffleState(),
-                        currentStatus.volumePercent(), currentStatus.liked()
+                        currentStatus.volumePercent(), currentStatus.liked(),
+                        currentStatus.repeatState()
                 );
             }
         } catch (Exception e) {
@@ -1015,7 +1083,8 @@ public final class SpotifyManager {
                         currentStatus.positionSeconds(), currentStatus.durationSeconds(),
                         currentStatus.artworkPath(), currentStatus.trackId(),
                         currentStatus.isPlaying(), state,
-                        currentStatus.volumePercent(), currentStatus.liked()
+                        currentStatus.volumePercent(), currentStatus.liked(),
+                        currentStatus.repeatState()
                 );
             }
         } catch (Exception e) {
@@ -1034,13 +1103,51 @@ public final class SpotifyManager {
                 currentStatus.positionSeconds(), currentStatus.durationSeconds(),
                 currentStatus.artworkPath(), currentStatus.trackId(),
                 currentStatus.isPlaying(), currentStatus.shuffleState(),
-                currentStatus.volumePercent(), newLiked
+                currentStatus.volumePercent(), newLiked,
+                currentStatus.repeatState()
         );
         lastPolledTrackLiked = newLiked;
     }
 
-    public record MediaStatus(String title, String artist, double positionSeconds, double durationSeconds, String artworkPath, String trackId, boolean isPlaying, boolean shuffleState, int volumePercent, boolean liked) {
-        public static final MediaStatus EMPTY = new MediaStatus("", "", 0.0, 0.0, "", "", false, false, 100, false);
+    public synchronized void toggleRepeat() {
+        if (!authorized || accessToken.isBlank()) return;
+        if (System.currentTimeMillis() + 30000L > tokenExpiresAt) {
+            refreshToken();
+        }
+        try {
+            String current = currentStatus != MediaStatus.EMPTY ? currentStatus.repeatState() : "off";
+            String nextState;
+            if ("off".equals(current)) {
+                nextState = "context";
+            } else if ("context".equals(current)) {
+                nextState = "track";
+            } else {
+                nextState = "off";
+            }
+            HttpClient client = HttpClient.newHttpClient();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("https://api.spotify.com/v1/me/player/repeat?state=" + nextState))
+                    .header("Authorization", "Bearer " + accessToken)
+                    .PUT(HttpRequest.BodyPublishers.noBody())
+                    .build();
+            client.send(request, HttpResponse.BodyHandlers.discarding());
+            if (currentStatus != MediaStatus.EMPTY) {
+                currentStatus = new MediaStatus(
+                        currentStatus.title(), currentStatus.artist(),
+                        currentStatus.positionSeconds(), currentStatus.durationSeconds(),
+                        currentStatus.artworkPath(), currentStatus.trackId(),
+                        currentStatus.isPlaying(), currentStatus.shuffleState(),
+                        currentStatus.volumePercent(), currentStatus.liked(),
+                        nextState
+                );
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public record MediaStatus(String title, String artist, double positionSeconds, double durationSeconds, String artworkPath, String trackId, boolean isPlaying, boolean shuffleState, int volumePercent, boolean liked, String repeatState) {
+        public static final MediaStatus EMPTY = new MediaStatus("", "", 0.0, 0.0, "", "", false, false, 100, false, "off");
 
         public boolean hasMedia() {
             return !title.isBlank() || !artist.isBlank();
@@ -1051,6 +1158,13 @@ public final class SpotifyManager {
                 return 0.0f;
             }
             return (float) Math.max(0.0, Math.min(1.0, positionSeconds / durationSeconds));
+        }
+    }
+
+    public record NextTrack(String title, String artist, String artworkPath) {
+        public static final NextTrack EMPTY = new NextTrack("", "", "");
+        public boolean hasMedia() {
+            return !title.isBlank() || !artist.isBlank();
         }
     }
 }

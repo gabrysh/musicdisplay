@@ -120,6 +120,7 @@ public class ClickGUI extends Screen {
     public final Animation selectorCircleAnimation = new Animation(Easing.EASE_OUT_CUBIC, 150);
     private final Animation enabledToggleAnimation = new Animation(Easing.EASE_OUT_CUBIC, 150);
     private final Animation controlsToggleAnimation = new Animation(Easing.EASE_OUT_CUBIC, 150);
+    private final Animation nextSongToggleAnimation = new Animation(Easing.EASE_OUT_CUBIC, 150);
     public boolean bgStyleComboOpen = false;
     public final Animation bgStyleComboAnimation = new Animation(Easing.EASE_OUT_CUBIC, 150);
     public float animatedCpSat = 0.0f;
@@ -134,6 +135,7 @@ public class ClickGUI extends Screen {
         selectorCircleAnimation.setStartValue(0.0f);
         enabledToggleAnimation.setStartValue(0.0f);
         controlsToggleAnimation.setStartValue(0.0f);
+        nextSongToggleAnimation.setStartValue(0.0f);
         bgStyleComboAnimation.setStartValue(0.0f);
     }
 
@@ -169,10 +171,12 @@ public class ClickGUI extends Screen {
         bgStyleComboAnimation.reset();
         selectorCircleAnimation.setStartValue(0.0f);
         selectorCircleAnimation.reset();
-        enabledToggleAnimation.setStartValue(MusicDisplayOverlay.isVisible() ? 1.0f : 0.0f);
+        enabledToggleAnimation.setStartValue(MusicDisplayOverlay.isOpened() ? 1.0f : 0.0f);
         enabledToggleAnimation.reset();
         controlsToggleAnimation.setStartValue(MusicDisplayOverlay.isShowControls() ? 1.0f : 0.0f);
         controlsToggleAnimation.reset();
+        nextSongToggleAnimation.setStartValue(MusicDisplayOverlay.isShowNextSong() ? 1.0f : 0.0f);
+        nextSongToggleAnimation.reset();
     }
 
     private float resolvePopupX(float pX) {
@@ -217,8 +221,9 @@ public class ClickGUI extends Screen {
         selectorCircleAnimation.run(draggingSB ? 1.0f : 0.0f);
 
         // Run toggle switch animations
-        enabledToggleAnimation.run(MusicDisplayOverlay.isVisible() ? 1.0f : 0.0f);
+        enabledToggleAnimation.run(MusicDisplayOverlay.isOpened() ? 1.0f : 0.0f);
         controlsToggleAnimation.run(MusicDisplayOverlay.isShowControls() ? 1.0f : 0.0f);
+        nextSongToggleAnimation.run(MusicDisplayOverlay.isShowNextSong() ? 1.0f : 0.0f);
 
         // Smoothly follow color picker values
         float lerpFactor = 0.2f;
@@ -286,7 +291,7 @@ public class ClickGUI extends Screen {
         if (headerFontM != null) {
             graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
                     headerFontM,
-                    "Music Display v2.1",
+                    "Music Display v2.3",
                     new Matrix3x2f(pose),
                     x + 25.0f,
                     y + 14.5f - headerFontM.getHeight(10.0f) / 2.0f,
@@ -336,7 +341,7 @@ public class ClickGUI extends Screen {
                     HaloRenderPipelines.ROUNDED_BLUR,
                     textureSetup,
                     pose,
-                    lCX, y + 27.5f, cW, 39.0f,
+                    lCX, y + 27.5f, cW, 52.0f,
                     ARGB.color(165, 0, 0, 0),
                     3.0f,
                     200.0f,
@@ -350,6 +355,7 @@ public class ClickGUI extends Screen {
             // Extract checkbox track
             com.haloclient.client.gui.click.elements.CheckboxElement.drawCheckbox(graphics, pose, textureSetup, scissor, "Enabled", lCX, y + 47.0f, cW, enabledToggleAnimation.getValue(), alphaScale, false, mouseX, mouseY, true);
             com.haloclient.client.gui.click.elements.CheckboxElement.drawCheckbox(graphics, pose, textureSetup, scissor, "Show Controls", lCX, y + 60.0f, cW, controlsToggleAnimation.getValue(), alphaScale, false, mouseX, mouseY, true);
+            com.haloclient.client.gui.click.elements.CheckboxElement.drawCheckbox(graphics, pose, textureSetup, scissor, "Show Next Song", lCX, y + 73.0f, cW, nextSongToggleAnimation.getValue(), alphaScale, false, mouseX, mouseY, true);
 
             // 2. Extract right section card ("Settings" + 3 sliders + color picker)
             float colWidth = 103.0f;
@@ -629,34 +635,54 @@ public class ClickGUI extends Screen {
                     ));
                 }
 
-                // Loading spinner animation
-                float angle = (System.currentTimeMillis() % 1000) / 1000.0f * 360.0f;
+                // Loading spinner animation (YouTube style)
+                long ms = com.haloclient.client.util.FrameClock.millis();
                 float circleX = loadCenterX;
                 float circleY = loadCenterY + 10.0f;
-                float circleRadius = 5.0f;
+                float circleRadius = 6.0f;
+                float dotSize = 1.5f;
 
-                // Build a matrix for rotating the spinner
-                Matrix3x2f spinnerPose = new Matrix3x2f(pose);
-                spinnerPose.translate(circleX, circleY);
-                spinnerPose.rotate((float) Math.toRadians(angle));
+                // Use modulo 6000ms to avoid float precision loss (LCM of 2000ms and 1500ms)
+                long relativeMs = ms % 6000L;
 
-                // Background track of the spinner (subtle outline circle)
+                // 1. Base rotation (constant speed)
+                float rotationCycle = (relativeMs % 2000) / 2000.0f;
+                float baseAngle = rotationCycle * 360.0f;
+
+                // 2. Arc expansion/contraction cycle (1500ms)
+                float arcCycle = (relativeMs % 1500) / 1500.0f;
+                float headAngle, tailAngle;
+
+                if (arcCycle < 0.5f) {
+                    float nt = arcCycle / 0.5f;
+                    // Ease-in-out using sine
+                    float easedHead = (float) (Math.sin(nt * Math.PI - Math.PI / 2.0) + 1.0) / 2.0f;
+                    tailAngle = 0.0f;
+                    headAngle = easedHead * 270.0f;
+                } else {
+                    float nt = (arcCycle - 0.5f) / 0.5f;
+                    float easedTail = (float) (Math.sin(nt * Math.PI - Math.PI / 2.0) + 1.0) / 2.0f;
+                    tailAngle = easedTail * 270.0f;
+                    headAngle = 270.0f;
+                }
+
+                // Continuous total angle within the 6000ms loop
+                float totalAngle = baseAngle + (float) Math.floor(relativeMs / 1500.0) * 270.0f + tailAngle;
+                float sweepAngle = headAngle - tailAngle;
+                if (sweepAngle < 15.0f) {
+                    sweepAngle = 15.0f;
+                }
+
+                // Draw the expanding/contracting arc using the custom SPINNER shader (perfectly smooth, anti-aliased, round-capped)
+                float quadSize = 16.0f;
                 graphics.guiRenderState.addGuiElement(new RoundedRectangleRenderState(
-                        HaloRenderPipelines.ROUNDED_RECT,
+                        HaloRenderPipelines.SPINNER,
                         pose,
-                        circleX - circleRadius, circleY - circleRadius, circleRadius * 2f, circleRadius * 2f,
-                        ARGB.color((int) (255 * 0.25f), 255, 255, 255), ARGB.color((int) (255 * 0.25f), 255, 255, 255),
-                        circleRadius, 1.0f, 0.0f,
-                        scissor
-                ));
-
-                // The rotating dot
-                graphics.guiRenderState.addGuiElement(new RoundedRectangleRenderState(
-                        HaloRenderPipelines.ROUNDED_RECT,
-                        spinnerPose,
-                        circleRadius - 1.0f, -1.0f, 2.0f, 2.0f,
-                        ARGB.color(255, 255, 255, 255),
-                        1.0f,
+                        circleX - quadSize / 2f, circleY - quadSize / 2f, quadSize, quadSize,
+                        ARGB.color(255, 255, 255, 255), ARGB.color(255, 255, 255, 255),
+                        circleRadius, 1.2f,
+                        0.0f, (float) Math.toRadians(totalAngle), (float) Math.toRadians(sweepAngle),
+                        0.0f,
                         scissor
                 ));
             } else {
@@ -667,7 +693,7 @@ public class ClickGUI extends Screen {
                 float listX = x + PADDING;
 
                 var resultFont = MsdfFontManager.getFont("productsans-medium", 6.5f);
-                var resultIconFont = MsdfFontManager.getFont("materialicons-regular", 10.0f);
+                var resultIconFont = MsdfFontManager.getFont("fluid-regular", 10.0f);
 
                 for (int i = 0; i < searchResults.size(); i++) {
                     SpotifyManager.SearchResultTrack track = searchResults.get(i);
@@ -763,6 +789,10 @@ public class ClickGUI extends Screen {
                     ScreenRectangle itemScissor = scissor != null ? scissor.intersection(itemBounds) : itemBounds;
 
                     if (resultFont != null) {
+                        SpotifyManager.MediaStatus status = SpotifyManager.getStatus();
+                        boolean isCurrent = status != null && status.hasMedia() && track.id().equals(status.trackId());
+                        int titleColor = isCurrent ? ARGB.color(255, 29, 185, 84) : ARGB.color(255, 255, 255, 255);
+
                         // Title at the top
                         graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
                                 resultFont,
@@ -771,7 +801,7 @@ public class ClickGUI extends Screen {
                                 textX,
                                 itemY + 7.0f - resultFont.getHeight(6.5f) / 2.0f,
                                 6.5f,
-                                ARGB.color(255, 255, 255, 255),
+                                titleColor,
                                 itemScissor
                         ));
                         // Artist at the bottom
@@ -803,22 +833,22 @@ public class ClickGUI extends Screen {
 
                         graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
                                 resultIconFont,
-                                track.liked() ? "\uE87D" : "\uE87E",
+                                track.liked() ? "D" : "D",
                                 new Matrix3x2f(pose),
-                                likeX - resultIconFont.getWidth(track.liked() ? "\uE87D" : "\uE87E", 9.0f) / 2.0f,
-                                iconY - resultIconFont.getHeight(9.0f) / 2.0f,
-                                9.0f,
+                                likeX - resultIconFont.getWidth(track.liked() ? "D" : "D", 16.0f) / 2.0f,
+                                iconY - resultIconFont.getHeight(16.0f) / 2.0f,
+                                16.0f,
                                 likeColor,
                                 scissor
                         ));
 
                         graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
                                 resultIconFont,
-                                "\uE037",
+                                "B",
                                 new Matrix3x2f(pose),
-                                playX - resultIconFont.getWidth("\uE037", 10.0f) / 2.0f,
-                                iconY - resultIconFont.getHeight(10.0f) / 2.0f,
-                                10.0f,
+                                playX - resultIconFont.getWidth("B", 16.0f) / 2.0f,
+                                iconY - resultIconFont.getHeight(16.0f) / 2.0f,
+                                16.0f,
                                 playColor,
                                 scissor
                         ));
@@ -1135,13 +1165,19 @@ public class ClickGUI extends Screen {
 
             // Enabled checkbox click (clicking anywhere on the checkbox card area)
             if (isHovered(mouseX, mouseY, x + PADDING, y + 47.0f - 6.5f, colWidth, 13.0f)) {
-                MusicDisplayOverlay.setVisible(!MusicDisplayOverlay.isVisible());
+                MusicDisplayOverlay.setVisible(!MusicDisplayOverlay.isOpened());
                 return true;
             }
 
             // Show Controls checkbox click
             if (isHovered(mouseX, mouseY, x + PADDING, y + 60.0f - 6.5f, colWidth, 13.0f)) {
                 MusicDisplayOverlay.setShowControls(!MusicDisplayOverlay.isShowControls());
+                return true;
+            }
+
+            // Show Next Song checkbox click
+            if (isHovered(mouseX, mouseY, x + PADDING, y + 73.0f - 6.5f, colWidth, 13.0f)) {
+                MusicDisplayOverlay.setShowNextSong(!MusicDisplayOverlay.isShowNextSong());
                 return true;
             }
 

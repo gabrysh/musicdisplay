@@ -24,6 +24,12 @@ public class KeyboardMixin {
                 return;
             }
         }
+        if (mc.screen instanceof net.minecraft.client.gui.screens.ChatScreen) {
+            if (com.haloclient.client.gui.click.MusicDisplayOverlay.onKeyEvent(event.key(), action, window)) {
+                ci.cancel();
+                return;
+            }
+        }
 
         if (action != GLFW.GLFW_PRESS) return;
         if (mc.screen != null) return;
