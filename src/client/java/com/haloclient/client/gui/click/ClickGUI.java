@@ -113,6 +113,15 @@ public class ClickGUI extends Screen {
     private boolean searchCursorVisible = true;
     private boolean searchLoading = false;
     private java.util.List<SpotifyManager.SearchResultTrack> searchResults = new java.util.ArrayList<>();
+    private SpotifyManager.SearchFilter currentSearchFilter = SpotifyManager.SearchFilter.ALL;
+
+    private void setAndTriggerSearchFilter(SpotifyManager.SearchFilter filter) {
+        if (this.currentSearchFilter == filter) return;
+        this.currentSearchFilter = filter;
+        triggerSearch(searchInputText);
+    }
+    private final Animation filterIndicatorX = new Animation(Easing.EASE_OUT_CUBIC, 200);
+    private final Animation filterIndicatorWidth = new Animation(Easing.EASE_OUT_CUBIC, 200);
     private final Map<String, NVGImageRenderer> searchArtRenderers = new java.util.HashMap<>();
     private final Animation scaleAnimation = new Animation(Easing.EASE_OUT_CUBIC, 250);
     private final Animation popupScaleAnimation = new Animation(Easing.EASE_OUT_CUBIC, 200);
@@ -137,6 +146,8 @@ public class ClickGUI extends Screen {
         controlsToggleAnimation.setStartValue(0.0f);
         nextSongToggleAnimation.setStartValue(0.0f);
         bgStyleComboAnimation.setStartValue(0.0f);
+        filterIndicatorX.setStartValue(0.0f);
+        filterIndicatorWidth.setStartValue(0.0f);
     }
 
     @Override
@@ -150,6 +161,9 @@ public class ClickGUI extends Screen {
         searchResults.clear();
         searchArtRenderers.clear();
         searchLoading = false;
+        currentSearchFilter = SpotifyManager.SearchFilter.ALL;
+        filterIndicatorX.setStartValue(0.0f);
+        filterIndicatorWidth.setStartValue(0.0f);
         closing = false;
         scaleAnimation.setStartValue(scaleAnimation.getValue());
         scaleAnimation.reset();
@@ -291,7 +305,7 @@ public class ClickGUI extends Screen {
         if (headerFontM != null) {
             graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
                     headerFontM,
-                    "Music Display v2.3",
+                    "Music Display v2.4",
                     new Matrix3x2f(pose),
                     x + 25.0f,
                     y + 14.5f - headerFontM.getHeight(10.0f) / 2.0f,
@@ -554,16 +568,7 @@ public class ClickGUI extends Screen {
                 String statusText = (status != null && status.hasMedia()) ? "Now playing" : "Idle";
                 int statusCol = ARGB.color((int) (140 * scale), 161, 161, 170);
                 float statusW = statusFont.getWidth(statusText, 6.0f);
-                graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
-                        statusFont,
-                        statusText,
-                        new Matrix3x2f(pose),
-                        x + PADDING + (WIDTH - PADDING * 2.0f) / 2.0f - statusW / 2.0f,
-                        y + HEIGHT - PADDING - 8.0f - statusFont.getHeight(6.0f) / 2.0f,
-                        6.0f,
-                        statusCol,
-                        scissor
-                ));
+
             }
         }
 
@@ -615,9 +620,121 @@ public class ClickGUI extends Screen {
                 }
             }
         } else {
+            // Draw filter buttons
+            var filterFont = MsdfFontManager.getFont("productsans-semibold", 6.0f);
+            if (filterFont != null) {
+                float totalFiltersW = 0;
+                float gap = 4.0f;
+                for (var f : SpotifyManager.SearchFilter.values()) {
+                    totalFiltersW += filterFont.getWidth(f.getDisplayName(), 6.0f) + 8.0f + gap;
+                }
+                totalFiltersW -= gap;
+                float filtersStartX = x + WIDTH - PADDING - totalFiltersW - 2.0f;
+
+                // Draw filter buttons background container (only behind the buttons)
+                graphics.guiRenderState.addGuiElement(new BlurredRoundedRectangleRenderState(
+                        HaloRenderPipelines.ROUNDED_BLUR,
+                        textureSetup,
+                        pose,
+                        filtersStartX - 2.0f, y + 24.0f, totalFiltersW + 4.0f, 12.0f,
+                        ARGB.color((int) (165 * scale), 0, 0, 0),
+                        3.0f,
+                        200.0f,
+                        0.0f,
+                        scissor
+                ));
+
+                var labelFont = MsdfFontManager.getFont("productsans-medium", 6.0f);
+                if (labelFont != null) {
+                    graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+                            labelFont,
+                            "Filters:",
+                            new Matrix3x2f(pose),
+                            x + PADDING + 2.0f,
+                            y + 25.0f + 5.0f - labelFont.getHeight(6.0f) / 2.0f,
+                            6.0f,
+                            ARGB.color((int) (150 * scale), 161, 161, 170),
+                            scissor
+                    ));
+                }
+
+                float activeX = filtersStartX;
+                float activeW = 0.0f;
+                float currentX = filtersStartX;
+                for (var f : SpotifyManager.SearchFilter.values()) {
+                    float btnW = filterFont.getWidth(f.getDisplayName(), 6.0f) + 8.0f;
+                    if (currentSearchFilter == f) {
+                        activeX = currentX;
+                        activeW = btnW;
+                    }
+                    currentX += btnW + gap;
+                }
+
+                // Run sliding active indicator animation
+                if (filterIndicatorX.getValue() == 0.0f) {
+                    filterIndicatorX.setStartValue(activeX);
+                    filterIndicatorWidth.setStartValue(activeW);
+                }
+                filterIndicatorX.run(activeX);
+                filterIndicatorWidth.run(activeW);
+
+                // Draw sliding active indicator background (green)
+                float indX = filterIndicatorX.getValue();
+                float indW = filterIndicatorWidth.getValue();
+                graphics.guiRenderState.addGuiElement(new BlurredRoundedRectangleRenderState(
+                        HaloRenderPipelines.ROUNDED_BLUR,
+                        textureSetup,
+                        pose,
+                        indX, y + 25.5f, indW, 9.0f,
+                        ARGB.color((int)(255 * scale), 29, 185, 84), // Spotify green
+                        2.0f,
+                        200.0f,
+                        0.0f,
+                        scissor
+                ));
+
+                currentX = filtersStartX;
+                for (var f : SpotifyManager.SearchFilter.values()) {
+                    float btnW = filterFont.getWidth(f.getDisplayName(), 6.0f) + 8.0f;
+                    float btnH = 9.0f;
+                    float btnY = y + 25.5f;
+                    boolean active = (currentSearchFilter == f);
+                    boolean hovered = isHovered(mouseX, mouseY, currentX, btnY, btnW, btnH);
+                    
+                    if (!active && hovered) {
+                        int bgCol = ARGB.color((int)(185 * scale), 0, 0, 0);
+                        graphics.guiRenderState.addGuiElement(new BlurredRoundedRectangleRenderState(
+                                HaloRenderPipelines.ROUNDED_BLUR,
+                                textureSetup,
+                                pose,
+                                currentX, btnY, btnW, btnH,
+                                bgCol,
+                                2.0f,
+                                200.0f,
+                                0.0f,
+                                scissor
+                        ));
+                    }
+                    
+                    int txtCol = active ? ARGB.color((int)(255 * scale), 255, 255, 255) : ARGB.color((int)(200 * scale), 220, 220, 220);
+                    float textW = filterFont.getWidth(f.getDisplayName(), 6.0f);
+                    graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+                            filterFont,
+                            f.getDisplayName(),
+                            new Matrix3x2f(pose),
+                            currentX + (btnW - textW) / 2.0f,
+                            btnY + btnH / 2.0f - filterFont.getHeight(6.0f) / 2.0f,
+                            6.0f,
+                            txtCol,
+                            scissor
+                    ));
+                    currentX += btnW + gap;
+                }
+            }
+
             // Extract Search Loading State or Results
             if (searchLoading && searchResults.isEmpty()) {
-                float loadCenterY = y + HEIGHT / 2.0f;
+                float loadCenterY = y + 38.0f + (HEIGHT - 38.0f - PADDING) / 2.0f;
                 float loadCenterX = x + WIDTH / 2.0f;
 
                 var loadFont = MsdfFontManager.getFont("productsans-semibold", 7.0f);
@@ -687,7 +804,7 @@ public class ClickGUI extends Screen {
                 ));
             } else {
                 // Render search results!
-                float listStartY = y + 26.0f;
+                float listStartY = y + 38.0f;
                 float itemH = 20.0f;
                 float listW = WIDTH - PADDING * 2.0f;
                 float listX = x + PADDING;
@@ -695,7 +812,7 @@ public class ClickGUI extends Screen {
                 var resultFont = MsdfFontManager.getFont("productsans-medium", 6.5f);
                 var resultIconFont = MsdfFontManager.getFont("fluid-regular", 10.0f);
 
-                for (int i = 0; i < searchResults.size(); i++) {
+                for (int i = 0; i < Math.min(searchResults.size(), 4); i++) {
                     SpotifyManager.SearchResultTrack track = searchResults.get(i);
                     float itemY = listStartY + i * (itemH + 2.0f);
 
@@ -717,45 +834,20 @@ public class ClickGUI extends Screen {
                     float artX = listX + 2.0f;
                     float artY = itemY + (itemH - artSize) / 2.0f;
 
-                    if (!track.localArtworkPath().isEmpty()) {
-                        // Load image with ImageManager
-                        java.io.File file = new java.io.File(track.localArtworkPath());
-                        if (file.exists()) {
-                            try {
-                                byte[] bytes = java.nio.file.Files.readAllBytes(file.toPath());
-                                ImageManager.CachedImage artCached = ImageManager.fromBytes(track.id(), bytes);
-                                if (artCached != null) {
-                                    graphics.guiRenderState.addGuiElement(new ImageRenderState(
-                                            HaloRenderPipelines.IMAGE,
-                                            artCached.textureSetup(),
-                                            pose,
-                                            artX, artY, artSize, artSize,
-                                            ARGB.color(255, 255, 255, 255),
-                                            2.0f,
-                                            ImageRenderState.ScaleMode.FILL,
-                                            artCached.width(), artCached.height(),
-                                            scissor
-                                    ));
-                                } else {
-                                    graphics.guiRenderState.addGuiElement(new RoundedRectangleRenderState(
-                                            HaloRenderPipelines.ROUNDED_RECT,
-                                            pose,
-                                            artX, artY, artSize, artSize,
-                                            ARGB.color(255, 40, 40, 40),
-                                            2.0f,
-                                            scissor
-                                    ));
-                                }
-                            } catch (Exception e) {
-                                graphics.guiRenderState.addGuiElement(new RoundedRectangleRenderState(
-                                        HaloRenderPipelines.ROUNDED_RECT,
-                                        pose,
-                                        artX, artY, artSize, artSize,
-                                        ARGB.color(255, 40, 40, 40),
-                                        2.0f,
-                                        scissor
-                                ));
-                            }
+                    if (!track.artworkUrl().isEmpty()) {
+                        ImageManager.CachedImage artCached = ImageManager.fromUrl(track.artworkUrl());
+                        if (artCached != null) {
+                            graphics.guiRenderState.addGuiElement(new ImageRenderState(
+                                    HaloRenderPipelines.IMAGE,
+                                    artCached.textureSetup(),
+                                    pose,
+                                    artX, artY, artSize, artSize,
+                                    ARGB.color(255, 255, 255, 255),
+                                    2.0f,
+                                    ImageRenderState.ScaleMode.FILL,
+                                    artCached.width(), artCached.height(),
+                                    scissor
+                            ));
                         } else {
                             graphics.guiRenderState.addGuiElement(new RoundedRectangleRenderState(
                                     HaloRenderPipelines.ROUNDED_RECT,
@@ -783,7 +875,7 @@ public class ClickGUI extends Screen {
 
                     // Scissor search text item
                     ScreenRectangle itemBounds = (new ScreenRectangle(
-                            (int) textX, (int) itemY,
+                             (int) textX, (int) itemY,
                             (int) textMaxW, (int) itemH
                     )).transformMaxBounds(pose);
                     ScreenRectangle itemScissor = scissor != null ? scissor.intersection(itemBounds) : itemBounds;
@@ -826,21 +918,23 @@ public class ClickGUI extends Screen {
                         float iconY = itemY + itemH / 2.0f;
 
                         boolean playHovered = isHovered(mouseX, mouseY, playX - 5.0f, itemY, playBtnW + 10.0f, itemH);
-                        boolean likeHovered = isHovered(mouseX, mouseY, likeX - 5.0f, itemY, likeBtnW + 10.0f, itemH);
-
                         int playColor = playHovered ? ARGB.color(255, 255, 255, 255) : ARGB.color(255, 161, 161, 170);
-                        int likeColor = track.liked() ? ARGB.color(255, 29, 185, 84) : (likeHovered ? ARGB.color(255, 255, 255, 255) : ARGB.color(255, 161, 161, 170));
 
-                        graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
-                                resultIconFont,
-                                track.liked() ? "D" : "D",
-                                new Matrix3x2f(pose),
-                                likeX - resultIconFont.getWidth(track.liked() ? "D" : "D", 16.0f) / 2.0f,
-                                iconY - resultIconFont.getHeight(16.0f) / 2.0f,
-                                16.0f,
-                                likeColor,
-                                scissor
-                        ));
+                        if (!track.isPlaylist()) {
+                            boolean likeHovered = isHovered(mouseX, mouseY, likeX - 5.0f, itemY, likeBtnW + 10.0f, itemH);
+                            int likeColor = track.liked() ? ARGB.color(255, 29, 185, 84) : (likeHovered ? ARGB.color(255, 255, 255, 255) : ARGB.color(255, 161, 161, 170));
+
+                            graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+                                    resultIconFont,
+                                    track.liked() ? "D" : "D",
+                                    new Matrix3x2f(pose),
+                                    likeX - resultIconFont.getWidth(track.liked() ? "D" : "D", 16.0f) / 2.0f,
+                                    iconY - resultIconFont.getHeight(16.0f) / 2.0f,
+                                    16.0f,
+                                    likeColor,
+                                    scissor
+                            ));
+                        }
 
                         graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
                                 resultIconFont,
@@ -938,14 +1032,39 @@ public class ClickGUI extends Screen {
                 searchInputActive = false;
             }
 
+            // Filter buttons click check
+            if (!searchInputText.isEmpty()) {
+                var filterFont = MsdfFontManager.getFont("productsans-semibold", 6.0f);
+                if (filterFont != null) {
+                    float totalFiltersW = 0;
+                    float gap = 4.0f;
+                    for (var f : SpotifyManager.SearchFilter.values()) {
+                        totalFiltersW += filterFont.getWidth(f.getDisplayName(), 6.0f) + 8.0f + gap;
+                    }
+                    totalFiltersW -= gap;
+                    float filtersStartX = x + WIDTH - PADDING - totalFiltersW - 2.0f;
+                    float currentX = filtersStartX;
+                    for (var f : SpotifyManager.SearchFilter.values()) {
+                        float btnW = filterFont.getWidth(f.getDisplayName(), 6.0f) + 8.0f;
+                        float btnH = 10.0f;
+                        float btnY = y + 25.0f;
+                        if (isHovered(mouseX, mouseY, currentX, btnY, btnW, btnH)) {
+                            setAndTriggerSearchFilter(f);
+                            return true;
+                        }
+                        currentX += btnW + gap;
+                    }
+                }
+            }
+
             // Search result item click check (Play / Like)
             if (!searchInputText.isEmpty()) {
-                float listStartY = y + 26.0f;
+                float listStartY = y + 38.0f;
                 float itemH = 20.0f;
                 float listW = WIDTH - PADDING * 2.0f;
                 float listX = x + PADDING;
 
-                for (int i = 0; i < searchResults.size(); i++) {
+                for (int i = 0; i < Math.min(searchResults.size(), 4); i++) {
                     SpotifyManager.SearchResultTrack track = searchResults.get(i);
                     float itemY = listStartY + i * (itemH + 2.0f);
                     
@@ -955,21 +1074,27 @@ public class ClickGUI extends Screen {
                     float likeX = playX - 16.0f;
                     
                     if (isHovered(mouseX, mouseY, playX - 5.0f, itemY, playBtnW + 10.0f, itemH)) {
-                        SpotifyManager.getInstance().playTrack(track.id());
+                        if (track.isPlaylist()) {
+                            SpotifyManager.getInstance().playPlaylist(track.id());
+                        } else {
+                            SpotifyManager.getInstance().playTrack(track.id());
+                        }
                         return true;
                     }
                     
                     if (isHovered(mouseX, mouseY, likeX - 5.0f, itemY, likeBtnW + 10.0f, itemH)) {
-                        SpotifyManager.getInstance().likeTrack(track.id(), !track.liked());
-                        searchResults.set(i, new SpotifyManager.SearchResultTrack(
-                            track.id(), track.title(), track.artist(), track.artworkUrl(), track.localArtworkPath(), !track.liked()
-                        ));
+                        if (!track.isPlaylist()) {
+                            SpotifyManager.getInstance().likeTrack(track.id(), !track.liked());
+                            searchResults.set(i, new SpotifyManager.SearchResultTrack(
+                                track.id(), track.title(), track.artist(), track.artworkUrl(), track.localArtworkPath(), !track.liked(), false
+                            ));
+                        }
                         return true;
                     }
                 }
                 
                 // Block clicks on background widgets if search results are displayed
-                if (isHovered(mouseX, mouseY, listX, listStartY, listW, HEIGHT - 26.0f - PADDING)) {
+                if (isHovered(mouseX, mouseY, listX, listStartY, listW, HEIGHT - 38.0f - PADDING)) {
                     return true;
                 }
             }
@@ -1881,10 +2006,11 @@ public class ClickGUI extends Screen {
             return;
         }
         searchLoading = true;
+        SpotifyManager.SearchFilter filter = this.currentSearchFilter;
         java.util.concurrent.CompletableFuture.runAsync(() -> {
-            var results = SpotifyManager.getInstance().searchTracks(query);
+            var results = SpotifyManager.getInstance().search(query, filter);
             Minecraft.getInstance().execute(() -> {
-                if (searchInputText.equals(query)) {
+                if (searchInputText.equals(query) && this.currentSearchFilter == filter) {
                     this.searchResults = results;
                     this.searchLoading = false;
                 }

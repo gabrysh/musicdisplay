@@ -76,7 +76,41 @@ public final class SpotifyManager {
         }
     }
 
+    public void cleanOldArtworkCache() {
+        File cacheDir = new File(Minecraft.getInstance().gameDirectory, "config/spotify-search-cache");
+        if (cacheDir.exists() && cacheDir.isDirectory()) {
+            File[] files = cacheDir.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    if (file.isFile() && file.getName().endsWith(".png")) {
+                        file.delete();
+                    }
+                }
+            }
+        }
+        File configDir = new File(Minecraft.getInstance().gameDirectory, "config");
+        if (configDir.exists() && configDir.isDirectory()) {
+            File[] files = configDir.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    if (file.isFile() && file.getName().startsWith("spotify-art")) {
+                        file.delete();
+                    }
+                }
+            }
+        }
+    }
+
+    private static boolean cleanedCache = false;
     public static SpotifyManager getInstance() {
+        if (!cleanedCache) {
+            cleanedCache = true;
+            try {
+                INSTANCE.cleanOldArtworkCache();
+            } catch (Throwable t) {
+                System.err.println("[Halo/Spotify] Failed to clean search artwork cache: " + t.getMessage());
+            }
+        }
         return INSTANCE;
     }
 
@@ -178,7 +212,7 @@ public final class SpotifyManager {
                         "?client_id=" + URLEncoder.encode(tempClientId, StandardCharsets.UTF_8) +
                         "&response_type=code" +
                         "&redirect_uri=" + URLEncoder.encode(REDIRECT_URI, StandardCharsets.UTF_8) +
-                        "&scope=" + URLEncoder.encode("user-read-currently-playing user-read-playback-state user-modify-playback-state user-library-modify user-library-read", StandardCharsets.UTF_8);
+                        "&scope=" + URLEncoder.encode("user-read-currently-playing user-read-playback-state user-modify-playback-state user-library-modify user-library-read playlist-read-private playlist-read-collaborative", StandardCharsets.UTF_8);
 
                 exchange.getResponseHeaders().set("Location", authUrl);
                 exchange.sendResponseHeaders(303, -1);
@@ -783,9 +817,32 @@ public final class SpotifyManager {
                 """;
     }
 
-    public record SearchResultTrack(String id, String title, String artist, String artworkUrl, String localArtworkPath, boolean liked) {}
+    public record SearchResultTrack(String id, String title, String artist, String artworkUrl, String localArtworkPath, boolean liked, boolean isPlaylist) {
+        public SearchResultTrack(String id, String title, String artist, String artworkUrl, String localArtworkPath, boolean liked) {
+            this(id, title, artist, artworkUrl, localArtworkPath, liked, false);
+        }
+    }
+
+    public enum SearchFilter {
+        ALL("All"),
+        SONGS("Songs"),
+        PLAYLISTS("Playlists"),
+        OWN_PLAYLISTS("Library");
+
+        private final String displayName;
+        SearchFilter(String displayName) {
+            this.displayName = displayName;
+        }
+        public String getDisplayName() {
+            return displayName;
+        }
+    }
 
     public synchronized java.util.List<SearchResultTrack> searchTracks(String query) {
+        return search(query, SearchFilter.ALL);
+    }
+
+    public synchronized java.util.List<SearchResultTrack> search(String query, SearchFilter filter) {
         java.util.List<SearchResultTrack> results = new java.util.ArrayList<>();
         if (!authorized || accessToken.isBlank()) return results;
         if (System.currentTimeMillis() + 30000L > tokenExpiresAt) {
@@ -794,8 +851,60 @@ public final class SpotifyManager {
         try {
             HttpClient client = HttpClient.newHttpClient();
             String encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8);
+
+            if (filter == SearchFilter.OWN_PLAYLISTS) {
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create("https://api.spotify.com/v1/me/playlists?limit=50"))
+                        .header("Authorization", "Bearer " + accessToken)
+                        .GET()
+                        .build();
+                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                if (response.statusCode() == 200) {
+                    JsonObject json = JsonParser.parseString(response.body()).getAsJsonObject();
+                    if (json.has("items")) {
+                        var items = json.getAsJsonArray("items");
+                        int count = 0;
+                        for (int i = 0; i < items.size() && count < 5; i++) {
+                            if (items.get(i) == null || !items.get(i).isJsonObject()) continue;
+                            JsonObject playlist = items.get(i).getAsJsonObject();
+                            String name = playlist.get("name").getAsString();
+                            if (name.toLowerCase().contains(query.toLowerCase())) {
+                                String id = playlist.get("id").getAsString();
+                                String owner = playlist.getAsJsonObject("owner").get("display_name").getAsString();
+                                String artUrl = "";
+                                if (playlist.has("images")) {
+                                    var images = playlist.getAsJsonArray("images");
+                                    if (images.size() > 0) {
+                                        artUrl = images.get(0).getAsJsonObject().get("url").getAsString();
+                                    }
+                                }
+                                String localArtPath = "";
+                                if (!artUrl.isEmpty()) {
+                                    localArtPath = getAndDownloadSearchArt(id, artUrl);
+                                }
+                                results.add(new SearchResultTrack(id, name, "Playlist by " + owner, artUrl, localArtPath, false, true));
+                                count++;
+                            }
+                        }
+                    }
+                } else if (response.statusCode() == 401) {
+                    refreshToken();
+                }
+                return results;
+            }
+
+            String typeParam = "track";
+            int limit = 5;
+            if (filter == SearchFilter.SONGS) {
+                typeParam = "track";
+            } else if (filter == SearchFilter.PLAYLISTS) {
+                typeParam = "playlist";
+            } else if (filter == SearchFilter.ALL) {
+                typeParam = "track,playlist";
+            }
+
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("https://api.spotify.com/v1/search?q=" + encodedQuery + "&type=track&limit=5"))
+                    .uri(URI.create("https://api.spotify.com/v1/search?q=" + encodedQuery + "&type=" + typeParam + "&limit=" + limit))
                     .header("Authorization", "Bearer " + accessToken)
                     .GET()
                     .build();
@@ -803,17 +912,23 @@ public final class SpotifyManager {
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() == 200) {
                 JsonObject json = JsonParser.parseString(response.body()).getAsJsonObject();
+                
                 if (json.has("tracks")) {
                     var items = json.getAsJsonObject("tracks").getAsJsonArray("items");
+                    int maxTracks = (filter == SearchFilter.ALL) ? 3 : items.size();
+                    
                     StringBuilder ids = new StringBuilder();
-                    for (int i = 0; i < items.size(); i++) {
+                    int trackCount = Math.min(items.size(), maxTracks);
+                    int validCount = 0;
+                    for (int i = 0; i < trackCount; i++) {
+                        if (items.get(i) == null || !items.get(i).isJsonObject()) continue;
                         JsonObject track = items.get(i).getAsJsonObject();
-                        if (i > 0) ids.append(",");
+                        if (validCount > 0) ids.append(",");
                         ids.append(track.get("id").getAsString());
+                        validCount++;
                     }
                     
-                    // Check liked state for all tracks in batch
-                    boolean[] likedStates = new boolean[items.size()];
+                    boolean[] likedStates = new boolean[trackCount];
                     if (ids.length() > 0) {
                         HttpRequest likedRequest = HttpRequest.newBuilder()
                                 .uri(URI.create("https://api.spotify.com/v1/me/tracks/contains?ids=" + ids.toString()))
@@ -823,13 +938,19 @@ public final class SpotifyManager {
                         HttpResponse<String> likedResp = client.send(likedRequest, HttpResponse.BodyHandlers.ofString());
                         if (likedResp.statusCode() == 200) {
                             var likedArr = JsonParser.parseString(likedResp.body()).getAsJsonArray();
-                            for (int i = 0; i < likedArr.size(); i++) {
-                                likedStates[i] = likedArr.get(i).getAsBoolean();
+                            int likedIdx = 0;
+                            for (int i = 0; i < trackCount; i++) {
+                                if (items.get(i) == null || !items.get(i).isJsonObject()) continue;
+                                if (likedIdx < likedArr.size()) {
+                                    likedStates[i] = likedArr.get(likedIdx).getAsBoolean();
+                                    likedIdx++;
+                                }
                             }
                         }
                     }
 
-                    for (int i = 0; i < items.size(); i++) {
+                    for (int i = 0; i < trackCount; i++) {
+                        if (items.get(i) == null || !items.get(i).isJsonObject()) continue;
                         JsonObject track = items.get(i).getAsJsonObject();
                         String id = track.get("id").getAsString();
                         String title = track.get("name").getAsString();
@@ -855,13 +976,37 @@ public final class SpotifyManager {
                             }
                         }
 
-                        // Download the artwork to a cached file so ClickGUI can render it
                         String localArtPath = "";
                         if (!artUrl.isEmpty()) {
                             localArtPath = getAndDownloadSearchArt(id, artUrl);
                         }
 
-                        results.add(new SearchResultTrack(id, title, artist, artUrl, localArtPath, likedStates[i]));
+                        results.add(new SearchResultTrack(id, title, artist, artUrl, localArtPath, likedStates[i], false));
+                    }
+                }
+                
+                if (json.has("playlists")) {
+                    var items = json.getAsJsonObject("playlists").getAsJsonArray("items");
+                    int maxPlaylists = (filter == SearchFilter.ALL) ? (5 - results.size()) : items.size();
+                    int playlistCount = Math.min(items.size(), maxPlaylists);
+                    for (int i = 0; i < playlistCount; i++) {
+                        if (items.get(i) == null || !items.get(i).isJsonObject()) continue;
+                        JsonObject playlist = items.get(i).getAsJsonObject();
+                        String id = playlist.get("id").getAsString();
+                        String name = playlist.get("name").getAsString();
+                        String owner = playlist.getAsJsonObject("owner").get("display_name").getAsString();
+                        String artUrl = "";
+                        if (playlist.has("images")) {
+                            var images = playlist.getAsJsonArray("images");
+                            if (images.size() > 0) {
+                                artUrl = images.get(0).getAsJsonObject().get("url").getAsString();
+                            }
+                        }
+                        String localArtPath = "";
+                        if (!artUrl.isEmpty()) {
+                            localArtPath = getAndDownloadSearchArt(id, artUrl);
+                        }
+                        results.add(new SearchResultTrack(id, name, "Playlist by " + owner, artUrl, localArtPath, false, true));
                     }
                 }
             } else if (response.statusCode() == 401) {
@@ -878,8 +1023,11 @@ public final class SpotifyManager {
         synchronized (searchArtCache) {
             if (searchArtCache.containsKey(trackId)) {
                 File cachedFile = new File(searchArtCache.get(trackId));
-                if (cachedFile.exists()) {
+                if (cachedFile.exists() && cachedFile.length() > 0) {
+                    cachedFile.setLastModified(System.currentTimeMillis());
                     return cachedFile.getAbsolutePath();
+                } else if (cachedFile.exists()) {
+                    cachedFile.delete();
                 }
             }
         }
@@ -888,21 +1036,31 @@ public final class SpotifyManager {
             cacheDir.mkdirs();
         }
         File artFile = new File(cacheDir, trackId + ".png");
-        if (artFile.exists()) {
+        if (artFile.exists() && artFile.length() > 0) {
+            artFile.setLastModified(System.currentTimeMillis());
             synchronized (searchArtCache) {
                 searchArtCache.put(trackId, artFile.getAbsolutePath());
             }
             return artFile.getAbsolutePath();
+        } else if (artFile.exists()) {
+            artFile.delete();
         }
         try {
-            HttpClient client = HttpClient.newHttpClient();
+            HttpClient client = HttpClient.newBuilder()
+                    .followRedirects(HttpClient.Redirect.NORMAL)
+                    .build();
             HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).build();
-            client.send(request, HttpResponse.BodyHandlers.ofFile(artFile.toPath()));
-            if (artFile.exists()) {
-                synchronized (searchArtCache) {
-                    searchArtCache.put(trackId, artFile.getAbsolutePath());
+            HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());
+            if (response.statusCode() == 200) {
+                byte[] bytes = response.body();
+                if (bytes != null && bytes.length > 0) {
+                    java.nio.file.Files.write(artFile.toPath(), bytes);
+                    artFile.setLastModified(System.currentTimeMillis());
+                    synchronized (searchArtCache) {
+                        searchArtCache.put(trackId, artFile.getAbsolutePath());
+                    }
+                    return artFile.getAbsolutePath();
                 }
-                return artFile.getAbsolutePath();
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -926,6 +1084,27 @@ public final class SpotifyManager {
                     .build();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             System.out.println("[SpotifyManager] playTrack HTTP " + response.statusCode() + ": " + response.body());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public synchronized void playPlaylist(String playlistId) {
+        if (!authorized || accessToken.isBlank()) return;
+        if (System.currentTimeMillis() + 30000L > tokenExpiresAt) {
+            refreshToken();
+        }
+        try {
+            HttpClient client = HttpClient.newHttpClient();
+            String jsonBody = "{\"context_uri\":\"spotify:playlist:" + playlistId + "\"}";
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("https://api.spotify.com/v1/me/player/play"))
+                    .header("Authorization", "Bearer " + accessToken)
+                    .header("Content-Type", "application/json")
+                    .PUT(HttpRequest.BodyPublishers.ofString(jsonBody))
+                    .build();
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            System.out.println("[SpotifyManager] playPlaylist HTTP " + response.statusCode() + ": " + response.body());
         } catch (Exception e) {
             e.printStackTrace();
         }

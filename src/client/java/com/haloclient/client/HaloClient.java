@@ -10,6 +10,7 @@ import com.haloclient.client.render.font.FontManager;
 import com.haloclient.client.render.font.HaloFontRenderState;
 import com.haloclient.client.util.FrameClock;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -56,6 +57,12 @@ public class HaloClient implements ClientModInitializer {
                     client.setScreen(new com.haloclient.client.gui.click.ClickGUI());
                 }
             }
+        });
+
+        ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
+            try {
+                com.haloclient.client.gui.click.SpotifyManager.getInstance().cleanOldArtworkCache();
+            } catch (Throwable ignored) {}
         });
     }
 

@@ -41,6 +41,7 @@ import java.util.concurrent.Executors;
 public class ImageManager {
 
     private static final Map<String, CachedImage> CACHE = new ConcurrentHashMap<>();
+    private static final Map<String, Boolean> FAILED_CACHE = new ConcurrentHashMap<>();
     private static final ExecutorService DOWNLOAD_POOL = Executors.newFixedThreadPool(2);
     private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
@@ -113,7 +114,7 @@ public class ImageManager {
 
             try (InputStream is = resourceOpt.get().open()) {
                 byte[] bytes = is.readAllBytes();
-                CachedImage result = uploadFromBytes(bytes);
+                CachedImage result = uploadFromBytes(id.toString(), bytes);
                 if (result != null) CACHE.put(key, result);
                 return result;
             }
@@ -135,15 +136,25 @@ public class ImageManager {
      * @param url URL obrazu do pobrania
      * @return CachedImage lub null jeśli jeszcze nie pobrano
      */
+    private static String normalizeUrl(String url) {
+        if (url == null) return "";
+        if (url.contains("spotifycdn.com/image/")) {
+            return url.replaceAll("https?://image-cdn-[a-zA-Z0-9-]+\\.spotifycdn\\.com/image/", "https://i.scdn.co/image/")
+                      .replaceAll("https?://image-cdn\\.spotifycdn\\.com/image/", "https://i.scdn.co/image/");
+        }
+        return url;
+    }
+
     public static CachedImage fromUrl(String url) {
-        String key = "url:" + url;
+        String normalized = normalizeUrl(url);
+        String key = "url:" + normalized;
         CachedImage cached = CACHE.get(key);
         if (cached != null) return cached;
 
         // Sprawdź czy pobieranie jest w toku
         if (!PENDING_DOWNLOADS.containsKey(key)) {
             PENDING_DOWNLOADS.put(key, true);
-            downloadAsync(url, key);
+            downloadAsync(normalized, key);
         }
 
         return null; // Jeszcze nie gotowe
@@ -157,6 +168,7 @@ public class ImageManager {
                 HttpRequest request = HttpRequest.newBuilder()
                         .uri(URI.create(url))
                         .timeout(Duration.ofSeconds(15))
+                        .header("Accept", "image/jpeg, image/png")
                         .GET()
                         .build();
 
@@ -168,13 +180,16 @@ public class ImageManager {
                     // Planujemy upload na renderThread
                     Minecraft.getInstance().execute(() -> {
                         try {
-                            CachedImage result = uploadFromBytes(data);
+                            CachedImage result = uploadFromBytes(url, data);
                             if (result != null) {
                                 CACHE.put(cacheKey, result);
+                            } else {
+                                FAILED_CACHE.put(cacheKey, true);
                             }
                             PENDING_DOWNLOADS.remove(cacheKey);
                         } catch (Exception e) {
                             System.err.println("[ImageManager] Błąd parsowania obrazu z URL: " + url + " - " + e.getMessage());
+                            FAILED_CACHE.put(cacheKey, true);
                             PENDING_DOWNLOADS.remove(cacheKey);
                         }
                     });
@@ -202,11 +217,16 @@ public class ImageManager {
      */
     public static CachedImage fromBytes(String name, byte[] imageBytes) {
         String key = "native:" + name;
+        if (FAILED_CACHE.containsKey(key)) return null;
         CachedImage cached = CACHE.get(key);
         if (cached != null) return cached;
 
-        CachedImage result = uploadFromBytes(imageBytes);
-        if (result != null) CACHE.put(key, result);
+        CachedImage result = uploadFromBytes(name, imageBytes);
+        if (result != null) {
+            CACHE.put(key, result);
+        } else {
+            FAILED_CACHE.put(key, true);
+        }
         return result;
     }
 
@@ -218,7 +238,7 @@ public class ImageManager {
      * Dekoduje obraz z surowych bajtów przez STBImage i uploaduje na GPU
      * z pełnym łańcuchem mipmap dla ostrego renderowania przy każdej skali.
      */
-    private static CachedImage uploadFromBytes(byte[] data) {
+    private static CachedImage uploadFromBytes(String context, byte[] data) {
         // Dekoduj obraz przez STBImage
         ByteBuffer inputBuffer = BufferUtils.createByteBuffer(data.length);
         inputBuffer.put(data);
@@ -228,12 +248,18 @@ public class ImageManager {
         ByteBuffer pixels = STBImage.stbi_load_from_memory(inputBuffer, wArr, hArr, channelsArr, 4);
 
         if (pixels == null) {
-            System.err.println("[ImageManager] STBImage nie mógł zdekodować obrazu: " + STBImage.stbi_failure_reason());
+            System.err.println("[ImageManager] STBImage nie mógł zdekodować obrazu [" + context + "]: " + STBImage.stbi_failure_reason());
             return null;
         }
 
         int w = wArr[0];
         int h = hArr[0];
+
+        if (w < 16 || h < 16) {
+            STBImage.stbi_image_free(pixels);
+            System.err.println("[ImageManager] Za małe wymiary obrazu (placeholder/błąd): " + w + "x" + h);
+            return null;
+        }
 
         // Oblicz liczbę mip levels (pełny łańcuch aż do 1x1)
         int mipLevels = calculateMipLevels(w, h);
@@ -287,7 +313,7 @@ public class ImageManager {
      * Oblicza liczbę mip levels dla danego rozmiaru tekstury.
      */
     private static int calculateMipLevels(int w, int h) {
-        return (int) (Math.floor(Math.log(Math.max(w, h)) / Math.log(2))) + 1;
+        return (int) (Math.floor(Math.log(Math.min(w, h)) / Math.log(2))) + 1;
     }
 
     /**
