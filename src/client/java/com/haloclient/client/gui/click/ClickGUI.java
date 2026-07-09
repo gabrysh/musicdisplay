@@ -835,30 +835,24 @@ public class ClickGUI extends Screen {
                     float artX = listX + 2.0f;
                     float artY = itemY + (itemH - artSize) / 2.0f;
 
+                    ImageManager.CachedImage artCached = null;
                     if (!track.artworkUrl().isEmpty()) {
-                        ImageManager.CachedImage artCached = ImageManager.fromUrl(track.artworkUrl());
-                        if (artCached != null) {
-                            graphics.guiRenderState.addGuiElement(new ImageRenderState(
-                                    HaloRenderPipelines.IMAGE,
-                                    artCached.textureSetup(),
-                                    pose,
-                                    artX, artY, artSize, artSize,
-                                    ARGB.color(255, 255, 255, 255),
-                                    2.0f,
-                                    ImageRenderState.ScaleMode.FILL,
-                                    artCached.width(), artCached.height(),
-                                    scissor
-                            ));
-                        } else {
-                            graphics.guiRenderState.addGuiElement(new RoundedRectangleRenderState(
-                                    HaloRenderPipelines.ROUNDED_RECT,
-                                    pose,
-                                    artX, artY, artSize, artSize,
-                                    ARGB.color(255, 40, 40, 40),
-                                    2.0f,
-                                    scissor
-                            ));
-                        }
+                        artCached = ImageManager.fromUrl(track.artworkUrl());
+                    } else if (!track.localArtworkPath().isEmpty()) {
+                        artCached = loadLocalArt(track.localArtworkPath());
+                    }
+                    if (artCached != null) {
+                        graphics.guiRenderState.addGuiElement(new ImageRenderState(
+                                HaloRenderPipelines.IMAGE,
+                                artCached.textureSetup(),
+                                pose,
+                                artX, artY, artSize, artSize,
+                                ARGB.color(255, 255, 255, 255),
+                                2.0f,
+                                ImageRenderState.ScaleMode.FILL,
+                                artCached.width(), artCached.height(),
+                                scissor
+                        ));
                     } else {
                         graphics.guiRenderState.addGuiElement(new RoundedRectangleRenderState(
                                 HaloRenderPipelines.ROUNDED_RECT,
@@ -2008,6 +2002,28 @@ public class ClickGUI extends Screen {
         // Persist any settings changed in the GUI (colors, gui size, toggles, sliders).
         MusicDisplayOverlay.scheduleSave();
         super.removed();
+    }
+
+    private static final java.util.Map<String, ImageManager.CachedImage> localArtCache = new java.util.HashMap<>();
+
+    /** Loads a search-result cover from a local file (already downloaded by the provider), cached by path. */
+    private static ImageManager.CachedImage loadLocalArt(String path) {
+        if (path == null || path.isEmpty()) return null;
+        ImageManager.CachedImage cached = localArtCache.get(path);
+        if (cached != null) return cached;
+        try {
+            java.io.File f = new java.io.File(path);
+            if (f.exists() && f.length() > 0) {
+                byte[] bytes = java.nio.file.Files.readAllBytes(f.toPath());
+                ImageManager.CachedImage img = ImageManager.fromBytes("localart:" + path, bytes);
+                if (img != null) {
+                    localArtCache.put(path, img);
+                    return img;
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return null;
     }
 
     private static void openUrl(String url) {
