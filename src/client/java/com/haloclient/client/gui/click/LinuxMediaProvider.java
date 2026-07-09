@@ -44,6 +44,12 @@ final class LinuxMediaProvider {
 
     private static Boolean available;
     private volatile String lastPlayer;
+    private volatile long positionSampleMs;
+
+    /** Wall-clock time (ms) at which the last Position value was sampled — used as extrapolation base. */
+    long positionSampleMs() {
+        return positionSampleMs;
+    }
 
     boolean isAvailable() {
         if (available == null) {
@@ -120,8 +126,10 @@ final class LinuxMediaProvider {
         Matcher lm = LENGTH.matcher(meta);
         if (lm.find()) duration = Long.parseLong(lm.group(1)) / 1_000_000.0;
 
+        String posOut = getProp(player, "Position");
+        positionSampleMs = System.currentTimeMillis();
         double position = 0.0;
-        Matcher pm = INT64.matcher(getProp(player, "Position"));
+        Matcher pm = INT64.matcher(posOut);
         if (pm.find()) position = Long.parseLong(pm.group(1)) / 1_000_000.0;
 
         int volume = 100;
@@ -259,7 +267,11 @@ final class LinuxMediaProvider {
             return artFile.getAbsolutePath();
         }
         try {
-            HttpClient client = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
+            // Force HTTP/1.1: Java's default HTTP/2 fails ("header parser received no bytes")
+            // against a plain-HTTP Subsonic/Navidrome server.
+            HttpClient client = HttpClient.newBuilder()
+                    .version(HttpClient.Version.HTTP_1_1)
+                    .followRedirects(HttpClient.Redirect.NORMAL).build();
             HttpRequest request = HttpRequest.newBuilder().uri(URI.create(clean)).build();
             File temp = new File(Minecraft.getInstance().gameDirectory, "config/subsonic-art-temp-" + hash + ".png");
             if (!temp.getParentFile().exists()) temp.getParentFile().mkdirs();

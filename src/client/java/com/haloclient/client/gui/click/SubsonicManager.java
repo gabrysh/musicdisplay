@@ -252,6 +252,7 @@ public final class SubsonicManager {
     private boolean ping(String base, String user, String pass) {
         try {
             HttpClient client = HttpClient.newBuilder()
+                    .version(HttpClient.Version.HTTP_1_1)
                     .followRedirects(HttpClient.Redirect.NORMAL)
                     .build();
             HttpRequest request = HttpRequest.newBuilder()
@@ -296,7 +297,9 @@ public final class SubsonicManager {
         if (mp != null) {
             mprisActive = true;
             mprisPlayer = mpris.lastPlayer();
-            mprisBaseTimeMs = System.currentTimeMillis();
+            // Base the extrapolation on when Position was actually sampled (not "now", which
+            // trails by the cost of the metadata/art calls) so the bar stays in sync.
+            mprisBaseTimeMs = mpris.positionSampleMs();
             currentStatus = mp;
             return;
         }
@@ -314,6 +317,7 @@ public final class SubsonicManager {
     private void pollServer() {
         try {
             HttpClient client = HttpClient.newBuilder()
+                    .version(HttpClient.Version.HTTP_1_1)
                     .followRedirects(HttpClient.Redirect.NORMAL)
                     .build();
             HttpRequest request = HttpRequest.newBuilder()
@@ -435,6 +439,7 @@ public final class SubsonicManager {
         }
         try {
             HttpClient client = HttpClient.newBuilder()
+                    .version(HttpClient.Version.HTTP_1_1)
                     .followRedirects(HttpClient.Redirect.NORMAL)
                     .build();
             // NOTE: do not send "size" — with a size param some servers (e.g. Navidrome) return
