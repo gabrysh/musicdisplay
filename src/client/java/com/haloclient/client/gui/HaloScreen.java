@@ -23,7 +23,7 @@ public class HaloScreen extends Screen {
     }
 
     @Override
-    public void extractRenderState(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
         FrameClock.update();
         scaleAnimation.run(closing ? 0.0f : 1.0f);
         
@@ -56,7 +56,7 @@ public class HaloScreen extends Screen {
             pose.translate(-centerX, -centerY);
         }
 
-        graphics.guiRenderState.addGuiElement(new BlurredRoundedRectangleRenderState(
+        graphics.guiRenderState.submitGuiElement(new BlurredRoundedRectangleRenderState(
                 HaloRenderPipelines.ROUNDED_BLUR,
                 textureSetup,
                 pose,
@@ -68,7 +68,7 @@ public class HaloScreen extends Screen {
                 graphics.scissorStack.peek()
         ));
 
-        super.extractRenderState(graphics, mouseX, mouseY, delta);
+        super.render(graphics, mouseX, mouseY, delta);
     }
 
     @Override
@@ -77,7 +77,7 @@ public class HaloScreen extends Screen {
     }
 
     @Override
-    public void extractBackground(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
+    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
 
     }
 

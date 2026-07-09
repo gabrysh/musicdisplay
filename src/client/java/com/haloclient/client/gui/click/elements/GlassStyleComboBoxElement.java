@@ -35,7 +35,7 @@ public class GlassStyleComboBoxElement {
         if (extractPass) {
             if (graphics != null && pose != null && textureSetup != null) {
                 // Combobox background
-                graphics.guiRenderState.addGuiElement(new BlurredRoundedRectangleRenderState(
+                graphics.guiRenderState.submitGuiElement(new BlurredRoundedRectangleRenderState(
                         HaloRenderPipelines.ROUNDED_BLUR,
                         textureSetup,
                         pose,
@@ -50,7 +50,7 @@ public class GlassStyleComboBoxElement {
                 // Label Text
                 var font = MsdfFontManager.getFont("productsans-semibold", 6f);
                 if (font != null) {
-                    graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+                    graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                             font,
                             "Glass Style",
                             new Matrix3x2f(pose),
@@ -62,7 +62,7 @@ public class GlassStyleComboBoxElement {
                     ));
 
                     // Selected value text
-                    graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+                    graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                             font,
                             MusicDisplayOverlay.getBackgroundType().getName(),
                             new Matrix3x2f(pose),
@@ -90,7 +90,7 @@ public class GlassStyleComboBoxElement {
                     arrowPose.rotate((float) (Math.PI / 2.0 + (1.0 - progress) * Math.PI)); // closed=270° (down), open=90° (up)
                     arrowPose.translate(-arrowCenterX, -arrowCenterY);
 
-                    graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+                    graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                             iconFont,
                             arrowChar,
                             arrowPose,
@@ -118,7 +118,7 @@ public class GlassStyleComboBoxElement {
                     ScreenRectangle dropdownScissor = scissor != null ? scissor.intersection(dropdownBounds) : dropdownBounds;
 
                     // List Background — uses the dropdown scissor
-                    graphics.guiRenderState.addGuiElement(new BlurredRoundedRectangleRenderState(
+                    graphics.guiRenderState.submitGuiElement(new BlurredRoundedRectangleRenderState(
                             HaloRenderPipelines.ROUNDED_BLUR,
                             textureSetup,
                             pose,
@@ -136,7 +136,7 @@ public class GlassStyleComboBoxElement {
                         boolean optHovered = ClickGUI.isHovered(mouseX, mouseY, styleRectX, optY, styleRectW, styleOptionH) && mouseY <= styleListY + styleAnimListH;
 
                         if (optHovered && gui.bgStyleComboOpen) {
-                            graphics.guiRenderState.addGuiElement(new BlurredRoundedRectangleRenderState(
+                            graphics.guiRenderState.submitGuiElement(new BlurredRoundedRectangleRenderState(
                                     HaloRenderPipelines.ROUNDED_BLUR,
                                     textureSetup,
                                     pose,
@@ -151,7 +151,7 @@ public class GlassStyleComboBoxElement {
 
                         int col = (type == MusicDisplayOverlay.getBackgroundType()) ? ARGB.color(255, 255, 255, 255) : ARGB.color(255, 161, 161, 170);
                         if (type == MusicDisplayOverlay.getBackgroundType()) {
-                            graphics.guiRenderState.addGuiElement(new BlurredRoundedRectangleRenderState(
+                            graphics.guiRenderState.submitGuiElement(new BlurredRoundedRectangleRenderState(
                                     HaloRenderPipelines.ROUNDED_BLUR,
                                     textureSetup,
                                     pose,
@@ -166,7 +166,7 @@ public class GlassStyleComboBoxElement {
 
                         var itemFont = MsdfFontManager.getFont("productsans-semibold", 5.5f);
                         if (itemFont != null) {
-                            graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+                            graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                                     itemFont,
                                     type.getName(),
                                     new Matrix3x2f(pose),

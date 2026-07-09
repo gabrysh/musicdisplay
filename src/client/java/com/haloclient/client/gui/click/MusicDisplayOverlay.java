@@ -308,7 +308,7 @@ public final class MusicDisplayOverlay {
         int dynamicAlpha = (int) (maxAlpha * scale);
 
         if (backgroundType == BackgroundType.LIQUID_GLASS) {
-            graphics.guiRenderState.addGuiElement(new BlurredLiquidGlassRoundedRectangleRenderState(
+            graphics.guiRenderState.submitGuiElement(new BlurredLiquidGlassRoundedRectangleRenderState(
                     HaloRenderPipelines.LIQUID_GLASS,
                     textureSetup,
                     pose,
@@ -320,7 +320,7 @@ public final class MusicDisplayOverlay {
                     parentScissor
             ));
         } else {
-            graphics.guiRenderState.addGuiElement(new BlurredRoundedRectangleRenderState(
+            graphics.guiRenderState.submitGuiElement(new BlurredRoundedRectangleRenderState(
                     HaloRenderPipelines.ROUNDED_BLUR,
                     textureSetup,
                     pose,
@@ -352,7 +352,7 @@ public final class MusicDisplayOverlay {
         if (msdfTitleFont != null) {
             int titleAlpha = (int) (255 * drawScale);
             String trimmedTitle = trimToWidthMsdf(msdfTitleFont, title, textWidth, TITLE_SIZE);
-            graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+            graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                     msdfTitleFont,
                     trimmedTitle,
                     pose,
@@ -382,7 +382,7 @@ public final class MusicDisplayOverlay {
                 artistMaxWidth = textWidth - timeWidth - 8.0f;
             }
             String trimmedArtist = trimToWidthMsdf(msdfArtistFont, artist, artistMaxWidth, ARTISTTEXT_SIZE);
-            graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+            graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                     msdfArtistFont,
                     trimmedArtist,
                     pose,
@@ -411,7 +411,7 @@ public final class MusicDisplayOverlay {
             float timeX = textX + textWidth - timeWidth;
             float timeY = localY + 44.0f - PADDING - PROGRESS_HEIGHT - TIME_SIZE - 10.0f;
             
-            graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+            graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                     msdfArtistFont,
                     timeText,
                     pose,
@@ -435,7 +435,7 @@ public final class MusicDisplayOverlay {
         int bgAlpha = (int) (65 * drawScale);
 
         // Progress bar background
-        graphics.guiRenderState.addGuiElement(new RoundedRectangleRenderState(
+        graphics.guiRenderState.submitGuiElement(new RoundedRectangleRenderState(
                 HaloRenderPipelines.ROUNDED_RECT,
                 pose,
                 progressX, progressY, textWidth, PROGRESS_HEIGHT,
@@ -451,7 +451,7 @@ public final class MusicDisplayOverlay {
         int pB = progressColor & 0xFF;
         int fillAlpha = (int) (pA * drawScale);
 
-        graphics.guiRenderState.addGuiElement(new RoundedRectangleRenderState(
+        graphics.guiRenderState.submitGuiElement(new RoundedRectangleRenderState(
                 HaloRenderPipelines.ROUNDED_RECT,
                 pose,
                 progressX, progressY, filledWidth, PROGRESS_HEIGHT,
@@ -463,7 +463,7 @@ public final class MusicDisplayOverlay {
         // --- Album art / Spotify logo rendering (GPU pipeline — always crisp) ---
         
         // Background placeholder
-        graphics.guiRenderState.addGuiElement(new RoundedRectangleRenderState(
+        graphics.guiRenderState.submitGuiElement(new RoundedRectangleRenderState(
                 HaloRenderPipelines.ROUNDED_RECT,
                 pose,
                 localX + PADDING,
@@ -476,7 +476,7 @@ public final class MusicDisplayOverlay {
         ));
 
         if (currentAlbumArt != null) {
-            graphics.guiRenderState.addGuiElement(new ImageRenderState(
+            graphics.guiRenderState.submitGuiElement(new ImageRenderState(
                     HaloRenderPipelines.IMAGE,
                     currentAlbumArt.textureSetup(),
                     pose,
@@ -495,7 +495,7 @@ public final class MusicDisplayOverlay {
             float iconSize = 19.0f;
             float iconX = localX + PADDING + (COVER_SIZE - iconSize) / 2.0f;
             float iconY = localY + PADDING + (COVER_SIZE - iconSize) / 2.0f;
-            graphics.guiRenderState.addGuiElement(new ImageRenderState(
+            graphics.guiRenderState.submitGuiElement(new ImageRenderState(
                     HaloRenderPipelines.IMAGE,
                     spotifyLogoImage.textureSetup(),
                     pose,
@@ -533,7 +533,7 @@ public final class MusicDisplayOverlay {
             // 1. Speaker Icon (E)
             boolean speakerHovered = chatOpen && localMX >= 6.0f && localMX <= 17.0f && localMY >= 40.0f && localMY <= 58.0f;
             int speakerColor = speakerHovered ? ARGB.color(controlAlpha, 255, 255, 255) : ARGB.color((int)(controlAlpha * 0.7f), 255, 255, 255);
-            graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+            graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                     fluidFont,
                     "E",
                     pose,
@@ -552,7 +552,7 @@ public final class MusicDisplayOverlay {
             float volPct = isConfigured ? (status.volumePercent() / 100.0f) : 0.5f;
 
             // Slider bg
-            graphics.guiRenderState.addGuiElement(new RoundedRectangleRenderState(
+            graphics.guiRenderState.submitGuiElement(new RoundedRectangleRenderState(
                     HaloRenderPipelines.ROUNDED_RECT,
                     pose,
                     sliderX, sliderY, sliderW, sliderH,
@@ -563,7 +563,7 @@ public final class MusicDisplayOverlay {
 
             // Slider fill
             float fillW = sliderW * volPct;
-            graphics.guiRenderState.addGuiElement(new RoundedRectangleRenderState(
+            graphics.guiRenderState.submitGuiElement(new RoundedRectangleRenderState(
                     HaloRenderPipelines.ROUNDED_RECT,
                     pose,
                     sliderX, sliderY, fillW, sliderH,
@@ -575,7 +575,7 @@ public final class MusicDisplayOverlay {
             // Slider knob
             boolean sliderHovered = chatOpen && localMX >= 18.0f && localMX <= 48.0f && localMY >= 40.0f && localMY <= 58.0f;
             float knobRadius = (sliderHovered || draggingVolume) ? 2.5f : 1.5f;
-            graphics.guiRenderState.addGuiElement(new RoundedRectangleRenderState(
+            graphics.guiRenderState.submitGuiElement(new RoundedRectangleRenderState(
                     HaloRenderPipelines.ROUNDED_RECT,
                     pose,
                     sliderX + fillW - knobRadius, sliderY + sliderH / 2.0f - knobRadius, knobRadius * 2.0f, knobRadius * 2.0f,
@@ -589,7 +589,7 @@ public final class MusicDisplayOverlay {
             
             boolean prevHovered = chatOpen && localMX >= 73.0f - 5 && localMX <= 87.0f- 5 && localMY >= 40.0f && localMY <= 58.0f;
             int prevColor = prevHovered ? ARGB.color(controlAlpha, 255, 255, 255) : ARGB.color((int)(controlAlpha * 0.7f), 255, 255, 255);
-            graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+            graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                     fluidFont,
                     "H",
                     pose,
@@ -603,7 +603,7 @@ public final class MusicDisplayOverlay {
             boolean playHovered = chatOpen && localMX >= 88.0f- 5 && localMX <= 101.0f- 5 && localMY >= 40.0f && localMY <= 58.0f;
             int playColor = playHovered ? ARGB.color(controlAlpha, 255, 255, 255) : ARGB.color((int)(controlAlpha * 0.7f), 255, 255, 255);
             String playChar = (isConfigured && status.isPlaying()) ? "A" : "B";
-            graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+            graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                     fluidFont,
                     playChar,
                     pose,
@@ -616,7 +616,7 @@ public final class MusicDisplayOverlay {
 
             boolean nextHovered = chatOpen && localMX >= 102.0f- 5 && localMX <= 116.0f- 5 && localMY >= 40.0f && localMY <= 58.0f;
             int nextColor = nextHovered ? ARGB.color(controlAlpha, 255, 255, 255) : ARGB.color((int)(controlAlpha * 0.7f), 255, 255, 255);
-            graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+            graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                     fluidFont,
                     "G",
                     pose,
@@ -631,7 +631,7 @@ public final class MusicDisplayOverlay {
             boolean loopHovered = chatOpen && localMX >= 134.0f && localMX <= 146.0f && localMY >= 40.0f && localMY <= 58.0f;
             boolean loopActive = isConfigured && status.repeatState() != null && !status.repeatState().equals("off");
             int loopColor = loopActive ? ARGB.color(controlAlpha, 29, 185, 84) : (loopHovered ? ARGB.color(controlAlpha, 255, 255, 255) : ARGB.color((int)(controlAlpha * 0.7f), 255, 255, 255));
-            graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+            graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                     fluidFont,
                     "I",
                     pose,
@@ -645,7 +645,7 @@ public final class MusicDisplayOverlay {
             boolean shuffleHovered = chatOpen && localMX >= 147.0f && localMX <= 159.0f && localMY >= 40.0f && localMY <= 58.0f;
             boolean shuffleActive = isConfigured && status.shuffleState();
             int shuffleColor = shuffleActive ? ARGB.color(controlAlpha, 29, 185, 84) : (shuffleHovered ? ARGB.color(controlAlpha, 255, 255, 255) : ARGB.color((int)(controlAlpha * 0.7f), 255, 255, 255));
-            graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+            graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                     fluidFont,
                     "C",
                     pose,
@@ -659,7 +659,7 @@ public final class MusicDisplayOverlay {
             boolean likeHovered = chatOpen && localMX >= 160.0f && localMX <= 172.0f && localMY >= 40.0f && localMY <= 58.0f;
             boolean likeActive = isConfigured && status.liked();
             int likeColor = likeActive ? ARGB.color(controlAlpha, 29, 185, 84) : (likeHovered ? ARGB.color(controlAlpha, 255, 255, 255) : ARGB.color((int)(controlAlpha * 0.7f), 255, 255, 255));
-            graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+            graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                     fluidFont,
                     "D",
                     pose,
@@ -695,7 +695,7 @@ public final class MusicDisplayOverlay {
             float nextLocalY = -nextHeight / 2.0f;
 
             if (backgroundType == BackgroundType.LIQUID_GLASS) {
-                graphics.guiRenderState.addGuiElement(new BlurredLiquidGlassRoundedRectangleRenderState(
+                graphics.guiRenderState.submitGuiElement(new BlurredLiquidGlassRoundedRectangleRenderState(
                         HaloRenderPipelines.LIQUID_GLASS,
                         textureSetup,
                         nextPose,
@@ -707,7 +707,7 @@ public final class MusicDisplayOverlay {
                         parentScissor
                 ));
             } else {
-                graphics.guiRenderState.addGuiElement(new BlurredRoundedRectangleRenderState(
+                graphics.guiRenderState.submitGuiElement(new BlurredRoundedRectangleRenderState(
                         HaloRenderPipelines.ROUNDED_BLUR,
                         textureSetup,
                         nextPose,
@@ -729,7 +729,7 @@ public final class MusicDisplayOverlay {
 
             ImageManager.CachedImage nextAlbumArt = getAlbumArt(nextTrack.artworkPath());
             if (nextAlbumArt != null) {
-                graphics.guiRenderState.addGuiElement(new ImageRenderState(
+                graphics.guiRenderState.submitGuiElement(new ImageRenderState(
                         HaloRenderPipelines.IMAGE,
                         nextAlbumArt.textureSetup(),
                         nextPose,
@@ -742,7 +742,7 @@ public final class MusicDisplayOverlay {
                         nextScissor
                 ));
             } else {
-                graphics.guiRenderState.addGuiElement(new RoundedRectangleRenderState(
+                graphics.guiRenderState.submitGuiElement(new RoundedRectangleRenderState(
                         HaloRenderPipelines.ROUNDED_RECT,
                         nextPose,
                         nextArtX, nextArtY, nextArtSize, nextArtSize,
@@ -756,7 +756,7 @@ public final class MusicDisplayOverlay {
             if (msdfArtistFont != null) {
                 String trimmedNext = trimToWidthMsdf(msdfArtistFont, nextText, 142.0f, 6.0f);
                 int textAlpha = (int) (((artistColor >> 24) & 0xFF) * scale);
-                graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+                graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                         msdfArtistFont,
                         trimmedNext,
                         nextPose,
@@ -784,7 +784,7 @@ public final class MusicDisplayOverlay {
             int horizLineCol = Math.abs(overlayCenterY - screenCenterY) < 0.01f ? ARGB.color(180, 29, 185, 84) : ARGB.color(100, 255, 255, 255);
 
             // Vertical center line
-            graphics.guiRenderState.addGuiElement(new RoundedRectangleRenderState(
+            graphics.guiRenderState.submitGuiElement(new RoundedRectangleRenderState(
                     HaloRenderPipelines.ROUNDED_RECT,
                     screenPose,
                     screenCenterX - 0.5f, 0.0f, 1.0f, screenHeight,
@@ -794,7 +794,7 @@ public final class MusicDisplayOverlay {
             ));
 
             // Horizontal center line
-            graphics.guiRenderState.addGuiElement(new RoundedRectangleRenderState(
+            graphics.guiRenderState.submitGuiElement(new RoundedRectangleRenderState(
                     HaloRenderPipelines.ROUNDED_RECT,
                     screenPose,
                     0.0f, screenCenterY - 0.5f, screenWidth, 1.0f,
@@ -850,7 +850,7 @@ public final class MusicDisplayOverlay {
                    .translate(-btnCenterX, -btnCenterY);
 
             if (backgroundType == BackgroundType.LIQUID_GLASS) {
-                graphics.guiRenderState.addGuiElement(new BlurredLiquidGlassRoundedRectangleRenderState(
+                graphics.guiRenderState.submitGuiElement(new BlurredLiquidGlassRoundedRectangleRenderState(
                         HaloRenderPipelines.LIQUID_GLASS,
                         textureSetup,
                         btnPose,
@@ -862,7 +862,7 @@ public final class MusicDisplayOverlay {
                         parentScissor
                 ));
             } else {
-                graphics.guiRenderState.addGuiElement(new BlurredRoundedRectangleRenderState(
+                graphics.guiRenderState.submitGuiElement(new BlurredRoundedRectangleRenderState(
                         HaloRenderPipelines.ROUNDED_BLUR,
                         textureSetup,
                         btnPose,
@@ -879,7 +879,7 @@ public final class MusicDisplayOverlay {
                 float iconSize = 20.0f;
                 float brushW = fluidFont.getWidth("J", iconSize);
                 float brushH = fluidFont.getHeight(iconSize);
-                graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+                graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                         fluidFont,
                         "J",
                         btnPose,
@@ -914,7 +914,7 @@ public final class MusicDisplayOverlay {
             int bgCol = ARGB.color((int) (bgA * popupScaleVal), bgR, bgG, bgB);
 
             if (backgroundType == BackgroundType.LIQUID_GLASS) {
-                graphics.guiRenderState.addGuiElement(new BlurredLiquidGlassRoundedRectangleRenderState(
+                graphics.guiRenderState.submitGuiElement(new BlurredLiquidGlassRoundedRectangleRenderState(
                         HaloRenderPipelines.LIQUID_GLASS,
                         textureSetup,
                         popupPose,
@@ -926,7 +926,7 @@ public final class MusicDisplayOverlay {
                         parentScissor
                 ));
             } else {
-                graphics.guiRenderState.addGuiElement(new BlurredRoundedRectangleRenderState(
+                graphics.guiRenderState.submitGuiElement(new BlurredRoundedRectangleRenderState(
                         HaloRenderPipelines.ROUNDED_BLUR,
                         textureSetup,
                         popupPose,

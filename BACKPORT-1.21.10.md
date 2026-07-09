@@ -1,4 +1,19 @@
-# 1.21.10 backport (WIP — does not compile yet)
+# 1.21.10 backport — COMPILES ✅ (runtime untested)
+
+`./gradlew build` with JDK 21 produces `build/libs/musicdisplay-2.4.jar` for **Minecraft 1.21.10**.
+Runtime (mixin apply + rendering behaviour) has NOT been tested on a real 1.21.10 client yet —
+test in a 1.21.10 + Fabric + Fabric API instance and report any crash.
+
+Second wave of deltas done: `addGuiElement`→`submitGuiElement`, Screen `extractRenderState`→`render`,
+`extractBackground`→`renderBackground`, `VertexFormatElement.register(..,boolean,..)`→`(..,Usage.GENERIC,..)`,
+`Matrix3x2fc`→`Matrix3x2f`, removed dead `renderRounded`/`renderWorldBox` (used 26.1-only
+`getGameRenderState()` and held an offensive debug string), `GuiMixin` target
+`extractRenderState`→`render`, `fabric.mod.json` (mc 1.21.10-1.21.11 / java 21 / loader 0.17.2),
+mixin `compatibilityLevel` JAVA_25→JAVA_21. All mixin target methods verified to exist in 1.21.10.
+
+---
+
+## Original notes
 
 Standalone branch that ports the mod (written for 26.1) down to the **obfuscated**
 Minecraft **1.21.10**.

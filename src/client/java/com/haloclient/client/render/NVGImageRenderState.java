@@ -5,7 +5,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.render.TextureSetup;
 import net.minecraft.client.gui.render.state.GuiElementRenderState;
-import org.joml.Matrix3x2fc;
+import org.joml.Matrix3x2f;
 import org.jspecify.annotations.Nullable;
 import org.lwjgl.opengl.GL33C;
 
@@ -13,7 +13,7 @@ import static org.lwjgl.opengl.GL11.GL_DEPTH_TEST;
 
 public record NVGImageRenderState(
     NVGImageRenderer image,
-    Matrix3x2fc pose,
+    Matrix3x2f pose,
     float x, float y, float width, float height,
     @Nullable ScreenRectangle scissorArea,
     @Nullable ScreenRectangle bounds
@@ -21,7 +21,7 @@ public record NVGImageRenderState(
 
     public NVGImageRenderState(
         final NVGImageRenderer image,
-        final Matrix3x2fc pose,
+        final Matrix3x2f pose,
         final float x, final float y, final float width, final float height,
         @Nullable final ScreenRectangle scissorArea
     ) {
@@ -52,7 +52,7 @@ public record NVGImageRenderState(
     @Nullable
     private static ScreenRectangle getBounds(
         final float x, final float y, final float width, final float height,
-        final Matrix3x2fc pose, @Nullable final ScreenRectangle scissorArea
+        final Matrix3x2f pose, @Nullable final ScreenRectangle scissorArea
     ) {
         ScreenRectangle rectBounds = new ScreenRectangle((int) x, (int) y, (int) width, (int) height).transformMaxBounds(pose);
         return scissorArea != null ? scissorArea.intersection(rectBounds) : rectBounds;
@@ -60,7 +60,7 @@ public record NVGImageRenderState(
 
     @Override public RenderPipeline pipeline() { return HaloRenderPipelines.ROUNDED_RECT; }
     @Override public TextureSetup textureSetup() { return CaptureManager.getCaptureTextureSetup(); }
-    @Override public Matrix3x2fc pose() { return pose; }
+    @Override public Matrix3x2f pose() { return pose; }
     @Nullable @Override public ScreenRectangle scissorArea() { return scissorArea; }
     @Nullable @Override public ScreenRectangle bounds() { return bounds; }
 }

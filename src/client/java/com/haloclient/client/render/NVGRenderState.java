@@ -8,19 +8,19 @@ import net.minecraft.client.gui.render.state.GuiElementRenderState;
 import com.haloclient.client.render.HaloRenderPipelines;
 import com.haloclient.client.render.CaptureManager;
 import org.joml.Matrix3x2f;
-import org.joml.Matrix3x2fc;
+import org.joml.Matrix3x2f;
 import org.jspecify.annotations.Nullable;
 import org.lwjgl.opengl.GL33C;
 import static org.lwjgl.opengl.GL11.GL_DEPTH_TEST;
 
 public record NVGRenderState(
     Runnable drawCall,
-    Matrix3x2fc pose,
+    Matrix3x2f pose,
     @Nullable ScreenRectangle scissorArea,
     @Nullable ScreenRectangle bounds
 ) implements GuiElementRenderState {
 
-    public NVGRenderState(Runnable drawCall, Matrix3x2fc pose, @Nullable ScreenRectangle scissorArea) {
+    public NVGRenderState(Runnable drawCall, Matrix3x2f pose, @Nullable ScreenRectangle scissorArea) {
         this(drawCall, pose, scissorArea, null);
     }
 

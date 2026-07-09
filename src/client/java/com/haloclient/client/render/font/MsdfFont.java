@@ -12,7 +12,7 @@ import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.textures.TextureFormat;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.gui.render.TextureSetup;
-import org.joml.Matrix3x2fc;
+import org.joml.Matrix3x2f;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -180,7 +180,7 @@ public class MsdfFont {
      * Draws a string using MSDF quads. Each glyph emits a quad with UV from the atlas
      * and pxRange passed via CustomData.x for the shader.
      */
-    public void drawString(VertexConsumer buffer, HaloVertexConsumer hv, Matrix3x2fc pose,
+    public void drawString(VertexConsumer buffer, HaloVertexConsumer hv, Matrix3x2f pose,
                            String text, float x, float y, float size, int color) {
         float scale = size / fontSize;
         float cursorX = x;
@@ -226,7 +226,7 @@ public class MsdfFont {
         }
     }
 
-    private void addVertex(VertexConsumer v, HaloVertexConsumer hv, Matrix3x2fc pose,
+    private void addVertex(VertexConsumer v, HaloVertexConsumer hv, Matrix3x2f pose,
                            float vx, float vy, float u, float vCoord, int color, float pxRange) {
         v.addVertexWith2DPose(pose, vx, vy).setColor(color).setUv(u, vCoord);
         hv.setCustomData(pxRange, 0, 0, 0); // pxRange passed to shader via CustomData.x

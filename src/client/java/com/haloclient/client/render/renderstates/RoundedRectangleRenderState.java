@@ -8,14 +8,14 @@ import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.render.TextureSetup;
 import net.minecraft.client.gui.render.state.GuiElementRenderState;
-import org.joml.Matrix3x2fc;
+import org.joml.Matrix3x2f;
 import org.jspecify.annotations.Nullable;
 
 @Environment(EnvType.CLIENT)
 public record RoundedRectangleRenderState(
     RenderPipeline pipeline,
     TextureSetup textureSetup,
-    Matrix3x2fc pose,
+    Matrix3x2f pose,
     float x, float y, float width, float height,
     int color, int color2,
     float radius, float borderThickness,
@@ -28,7 +28,7 @@ public record RoundedRectangleRenderState(
     // Main convenience constructor for single color
     public RoundedRectangleRenderState(
         final RenderPipeline pipeline,
-        final Matrix3x2fc pose,
+        final Matrix3x2f pose,
         final float x, final float y, final float width, final float height,
         final int color,
         final float radius,
@@ -40,7 +40,7 @@ public record RoundedRectangleRenderState(
     // Full constructor for advanced features (Gradients, Borders)
     public RoundedRectangleRenderState(
         final RenderPipeline pipeline,
-        final Matrix3x2fc pose,
+        final Matrix3x2f pose,
         final float x, final float y, final float width, final float height,
         final int color, final int color2,
         final float radius, final float borderThickness,
@@ -53,7 +53,7 @@ public record RoundedRectangleRenderState(
     // Constructor with Shadow/Bloom support
     public RoundedRectangleRenderState(
         final RenderPipeline pipeline,
-        final Matrix3x2fc pose,
+        final Matrix3x2f pose,
         final float x, final float y, final float width, final float height,
         final int color, final int color2,
         final float radius, final float borderThickness,
@@ -90,14 +90,14 @@ public record RoundedRectangleRenderState(
     }
 
     @Nullable
-    private static ScreenRectangle getBounds(final float x, final float y, final float width, final float height, final Matrix3x2fc pose, @Nullable final ScreenRectangle scissorArea) {
+    private static ScreenRectangle getBounds(final float x, final float y, final float width, final float height, final Matrix3x2f pose, @Nullable final ScreenRectangle scissorArea) {
         ScreenRectangle bounds = (new ScreenRectangle((int)x, (int)y, (int)width, (int)height)).transformMaxBounds(pose);
         return scissorArea != null ? scissorArea.intersection(bounds) : bounds;
     }
 
     @Override public RenderPipeline pipeline() { return pipeline; }
     @Override public TextureSetup textureSetup() { return textureSetup; }
-    @Override public Matrix3x2fc pose() { return pose; }
+    @Override public Matrix3x2f pose() { return pose; }
     @Nullable @Override public ScreenRectangle scissorArea() { return scissorArea; }
     @Nullable @Override public ScreenRectangle bounds() { return bounds; }
 }

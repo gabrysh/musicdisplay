@@ -202,7 +202,7 @@ public class ClickGUI extends Screen {
     }
 
     @Override
-    public void extractRenderState(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
         if (dragging) {
             panelX = mouseX - dragOffsetX;
             panelY = mouseY - dragOffsetY;
@@ -217,7 +217,7 @@ public class ClickGUI extends Screen {
         float scale = scaleAnimation.getValue();
         if (scale <= 0.001f) {
             if (closing) {
-                super.extractRenderState(graphics, mouseX, mouseY, delta);
+                super.render(graphics, mouseX, mouseY, delta);
                 return;
             }
             scale = 0.001f;
@@ -266,7 +266,7 @@ public class ClickGUI extends Screen {
         int alphaScale = (int)(165 * scale);
 
         // Draw blurred background rounded rect (Shadcn zinc-950 background)
-        graphics.guiRenderState.addGuiElement(new BlurredRoundedRectangleRenderState(
+        graphics.guiRenderState.submitGuiElement(new BlurredRoundedRectangleRenderState(
                 HaloRenderPipelines.ROUNDED_BLUR,
                 textureSetup,
                 pose,
@@ -283,7 +283,7 @@ public class ClickGUI extends Screen {
             float logoSize = 13.0f;
             float logoX = x + 8.0f;
             float logoY = y + 14.0f - logoSize / 2.0f;
-            graphics.guiRenderState.addGuiElement(new ImageRenderState(
+            graphics.guiRenderState.submitGuiElement(new ImageRenderState(
                     HaloRenderPipelines.IMAGE,
                     spotifyLogoImage.textureSetup(),
                     pose,
@@ -303,7 +303,7 @@ public class ClickGUI extends Screen {
         // Extract Header Title
         var headerFontM = MsdfFontManager.getFont("productsans-bold", 10.0f);
         if (headerFontM != null) {
-            graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+            graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                     headerFontM,
                     "Music Display v2.4",
                     new Matrix3x2f(pose),
@@ -329,7 +329,7 @@ public class ClickGUI extends Screen {
 
             int popupAlphaScale = (int)(165 * scale * popupScale);
 
-            graphics.guiRenderState.addGuiElement(new BlurredRoundedRectangleRenderState(
+            graphics.guiRenderState.submitGuiElement(new BlurredRoundedRectangleRenderState(
                     HaloRenderPipelines.ROUNDED_BLUR,
                     textureSetup,
                     popupPose,
@@ -351,7 +351,7 @@ public class ClickGUI extends Screen {
             float lCX = x + PADDING;
             
             // 1. Extract left section card ("Main" + checkbox + show controls)
-            graphics.guiRenderState.addGuiElement(new BlurredRoundedRectangleRenderState(
+            graphics.guiRenderState.submitGuiElement(new BlurredRoundedRectangleRenderState(
                     HaloRenderPipelines.ROUNDED_BLUR,
                     textureSetup,
                     pose,
@@ -374,7 +374,7 @@ public class ClickGUI extends Screen {
             // 2. Extract right section card ("Settings" + 3 sliders + color picker)
             float colWidth = 103.0f;
             float rightColX = x + WIDTH - PADDING - colWidth;
-            graphics.guiRenderState.addGuiElement(new BlurredRoundedRectangleRenderState(
+            graphics.guiRenderState.submitGuiElement(new BlurredRoundedRectangleRenderState(
                     HaloRenderPipelines.ROUNDED_BLUR,
                     textureSetup,
                     pose,
@@ -388,7 +388,7 @@ public class ClickGUI extends Screen {
 
             // Extract hover highlights for individual controls inside the unified settings card
              if (isHovered(mouseX, mouseY, rightColX, y + 99.0f - 6.5f, colWidth, 13.0f)) {
-                graphics.guiRenderState.addGuiElement(new BlurredRoundedRectangleRenderState(
+                graphics.guiRenderState.submitGuiElement(new BlurredRoundedRectangleRenderState(
                         HaloRenderPipelines.ROUNDED_BLUR,
                         textureSetup,
                         pose,
@@ -409,7 +409,7 @@ public class ClickGUI extends Screen {
                 float bloomY = y + 60.0f;
                 var font = MsdfFontManager.getFont("productsans-semibold", 6f);
                 if (font != null) {
-                    graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+                    graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                             font,
                             "Bloom",
                             new Matrix3x2f(pose),
@@ -420,7 +420,7 @@ public class ClickGUI extends Screen {
                             scissor
                     ));
                     
-                    graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+                    graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                             font,
                             "Unavailable with Liquid Glass.",
                             new Matrix3x2f(pose),
@@ -448,7 +448,7 @@ public class ClickGUI extends Screen {
         float searchY = y + 7.5f;
         float searchW = 97.0f;
         float searchH = 14.0f;
-        graphics.guiRenderState.addGuiElement(new BlurredRoundedRectangleRenderState(
+        graphics.guiRenderState.submitGuiElement(new BlurredRoundedRectangleRenderState(
                 HaloRenderPipelines.ROUNDED_BLUR,
                 textureSetup,
                 pose,
@@ -466,7 +466,7 @@ public class ClickGUI extends Screen {
         if (mediumFontM != null && materialIconFont != null) {
             int alphaInt = (int)(255 * scale);
             // Search icon (magnifying glass)
-            graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+            graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                     materialIconFont,
                     "\uE8B6",
                     new Matrix3x2f(pose),
@@ -503,7 +503,7 @@ public class ClickGUI extends Screen {
                 float selW = mediumFontM.getWidth(searchInputText.substring(selMin, selMax), 7.0f);
                 float selHighlightX = textLeft + beforeSelW;
 
-                graphics.guiRenderState.addGuiElement(new RoundedRectangleRenderState(
+                graphics.guiRenderState.submitGuiElement(new RoundedRectangleRenderState(
                         HaloRenderPipelines.ROUNDED_RECT,
                         pose,
                         selHighlightX, searchY + 3.0f, selW, searchH - 6.0f,
@@ -514,7 +514,7 @@ public class ClickGUI extends Screen {
             }
 
             // Draw search text
-            graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+            graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                     mediumFontM,
                     dispText,
                     new Matrix3x2f(pose),
@@ -528,7 +528,7 @@ public class ClickGUI extends Screen {
             // Cursor blink
             if (searchInputActive && searchCursorVisible) {
                 float textW = mediumFontM.getWidth(searchInputText.substring(0, searchCursor), 7.0f);
-                graphics.guiRenderState.addGuiElement(new RoundedRectangleRenderState(
+                graphics.guiRenderState.submitGuiElement(new RoundedRectangleRenderState(
                         HaloRenderPipelines.ROUNDED_RECT,
                         pose,
                         textLeft + textW, searchY + 3.0f, 1.0f, searchH - 6.0f,
@@ -547,7 +547,7 @@ public class ClickGUI extends Screen {
                 boolean clearHovered = isHovered(mouseX, mouseY, clearBtnX - 3.0f, clearBtnY - 3.0f, clearBtnW + 6.0f, clearBtnH + 6.0f);
                 int clearColor = clearHovered ? ARGB.color(alphaInt, 255, 255, 255) : ARGB.color(alphaInt, 161, 161, 170);
 
-                graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+                graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                         materialIconFont,
                         "\uE5CD", // 'close' icon
                         new Matrix3x2f(pose),
@@ -585,7 +585,7 @@ public class ClickGUI extends Screen {
                 int btnText = hovered ? ARGB.color(alphaScale, 250, 250, 250) : ARGB.color(alphaScale, 161, 161, 170);
 
                 // Button Background
-                graphics.guiRenderState.addGuiElement(new RoundedRectangleRenderState(
+                graphics.guiRenderState.submitGuiElement(new RoundedRectangleRenderState(
                         HaloRenderPipelines.ROUNDED_RECT,
                         pose,
                         btnX, btnY, btnW, btnH,
@@ -594,7 +594,7 @@ public class ClickGUI extends Screen {
                         scissor
                 ));
                 if (hovered) {
-                    graphics.guiRenderState.addGuiElement(new RoundedRectangleRenderState(
+                    graphics.guiRenderState.submitGuiElement(new RoundedRectangleRenderState(
                             HaloRenderPipelines.ROUNDED_RECT,
                             pose,
                             btnX, btnY, btnW, btnH,
@@ -608,7 +608,7 @@ public class ClickGUI extends Screen {
                 if (statusFont != null) {
                     String setupLabel = "Setup " + MusicManager.sourceDisplayName();
                     float textW = statusFont.getWidth(setupLabel, 7.0f);
-                    graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+                    graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                             statusFont,
                             setupLabel,
                             new Matrix3x2f(pose),
@@ -633,7 +633,7 @@ public class ClickGUI extends Screen {
                 float filtersStartX = x + WIDTH - PADDING - totalFiltersW - 2.0f;
 
                 // Draw filter buttons background container (only behind the buttons)
-                graphics.guiRenderState.addGuiElement(new BlurredRoundedRectangleRenderState(
+                graphics.guiRenderState.submitGuiElement(new BlurredRoundedRectangleRenderState(
                         HaloRenderPipelines.ROUNDED_BLUR,
                         textureSetup,
                         pose,
@@ -647,7 +647,7 @@ public class ClickGUI extends Screen {
 
                 var labelFont = MsdfFontManager.getFont("productsans-medium", 6.0f);
                 if (labelFont != null) {
-                    graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+                    graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                             labelFont,
                             "Filters:",
                             new Matrix3x2f(pose),
@@ -682,7 +682,7 @@ public class ClickGUI extends Screen {
                 // Draw sliding active indicator background (green)
                 float indX = filterIndicatorX.getValue();
                 float indW = filterIndicatorWidth.getValue();
-                graphics.guiRenderState.addGuiElement(new BlurredRoundedRectangleRenderState(
+                graphics.guiRenderState.submitGuiElement(new BlurredRoundedRectangleRenderState(
                         HaloRenderPipelines.ROUNDED_BLUR,
                         textureSetup,
                         pose,
@@ -704,7 +704,7 @@ public class ClickGUI extends Screen {
                     
                     if (!active && hovered) {
                         int bgCol = ARGB.color((int)(185 * scale), 0, 0, 0);
-                        graphics.guiRenderState.addGuiElement(new BlurredRoundedRectangleRenderState(
+                        graphics.guiRenderState.submitGuiElement(new BlurredRoundedRectangleRenderState(
                                 HaloRenderPipelines.ROUNDED_BLUR,
                                 textureSetup,
                                 pose,
@@ -719,7 +719,7 @@ public class ClickGUI extends Screen {
                     
                     int txtCol = active ? ARGB.color((int)(255 * scale), 255, 255, 255) : ARGB.color((int)(200 * scale), 220, 220, 220);
                     float textW = filterFont.getWidth(f.getDisplayName(), 6.0f);
-                    graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+                    graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                             filterFont,
                             f.getDisplayName(),
                             new Matrix3x2f(pose),
@@ -741,7 +741,7 @@ public class ClickGUI extends Screen {
                 var loadFont = MsdfFontManager.getFont("productsans-semibold", 7.0f);
                 if (loadFont != null) {
                     float textW = loadFont.getWidth("Loading...", 7.0f);
-                    graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+                    graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                             loadFont,
                             "Loading...",
                             new Matrix3x2f(pose),
@@ -793,7 +793,7 @@ public class ClickGUI extends Screen {
 
                 // Draw the expanding/contracting arc using the custom SPINNER shader (perfectly smooth, anti-aliased, round-capped)
                 float quadSize = 16.0f;
-                graphics.guiRenderState.addGuiElement(new RoundedRectangleRenderState(
+                graphics.guiRenderState.submitGuiElement(new RoundedRectangleRenderState(
                         HaloRenderPipelines.SPINNER,
                         pose,
                         circleX - quadSize / 2f, circleY - quadSize / 2f, quadSize, quadSize,
@@ -820,7 +820,7 @@ public class ClickGUI extends Screen {
                     // Hover highlight
                     boolean itemHovered = isHovered(mouseX, mouseY, listX, itemY, listW, itemH);
                     if (itemHovered) {
-                        graphics.guiRenderState.addGuiElement(new RoundedRectangleRenderState(
+                        graphics.guiRenderState.submitGuiElement(new RoundedRectangleRenderState(
                                 HaloRenderPipelines.ROUNDED_RECT,
                                 pose,
                                 listX, itemY, listW, itemH,
@@ -842,7 +842,7 @@ public class ClickGUI extends Screen {
                         artCached = loadLocalArt(track.localArtworkPath());
                     }
                     if (artCached != null) {
-                        graphics.guiRenderState.addGuiElement(new ImageRenderState(
+                        graphics.guiRenderState.submitGuiElement(new ImageRenderState(
                                 HaloRenderPipelines.IMAGE,
                                 artCached.textureSetup(),
                                 pose,
@@ -854,7 +854,7 @@ public class ClickGUI extends Screen {
                                 scissor
                         ));
                     } else {
-                        graphics.guiRenderState.addGuiElement(new RoundedRectangleRenderState(
+                        graphics.guiRenderState.submitGuiElement(new RoundedRectangleRenderState(
                                 HaloRenderPipelines.ROUNDED_RECT,
                                 pose,
                                 artX, artY, artSize, artSize,
@@ -881,7 +881,7 @@ public class ClickGUI extends Screen {
                         int titleColor = isCurrent ? ARGB.color(255, 29, 185, 84) : ARGB.color(255, 255, 255, 255);
 
                         // Title at the top
-                        graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+                        graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                                 resultFont,
                                 track.title(),
                                 new Matrix3x2f(pose),
@@ -892,7 +892,7 @@ public class ClickGUI extends Screen {
                                 itemScissor
                         ));
                         // Artist at the bottom
-                        graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+                        graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                                 resultFont,
                                 track.artist(),
                                 new Matrix3x2f(pose),
@@ -919,7 +919,7 @@ public class ClickGUI extends Screen {
                             boolean likeHovered = isHovered(mouseX, mouseY, likeX - 5.0f, itemY, likeBtnW + 10.0f, itemH);
                             int likeColor = track.liked() ? ARGB.color(255, 29, 185, 84) : (likeHovered ? ARGB.color(255, 255, 255, 255) : ARGB.color(255, 161, 161, 170));
 
-                            graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+                            graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                                     resultIconFont,
                                     track.liked() ? "D" : "D",
                                     new Matrix3x2f(pose),
@@ -931,7 +931,7 @@ public class ClickGUI extends Screen {
                             ));
                         }
 
-                        graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+                        graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                                 resultIconFont,
                                 "B",
                                 new Matrix3x2f(pose),
@@ -949,7 +949,7 @@ public class ClickGUI extends Screen {
         if (searchInputText.isEmpty()) {
             var font = MsdfFontManager.getFont("productsans-medium", 6f);
             if (font != null) {
-                graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+                graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                         font,
                         "Main",
                         new Matrix3x2f(pose),
@@ -962,7 +962,7 @@ public class ClickGUI extends Screen {
             }
             float colWidth = 103.0f;
             if (font != null) {
-                graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+                graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                         font,
                         "Settings",
                         new Matrix3x2f(pose),
@@ -975,7 +975,7 @@ public class ClickGUI extends Screen {
             }
         }
         loadAssets();
-        super.extractRenderState(graphics, mouseX, mouseY, delta);
+        super.render(graphics, mouseX, mouseY, delta);
     }
 
     @Override
@@ -1464,7 +1464,7 @@ public class ClickGUI extends Screen {
     }
 
     @Override
-    public void extractBackground(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
+    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
     }
 
     @Override

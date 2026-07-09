@@ -9,7 +9,7 @@ import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.render.TextureSetup;
 import net.minecraft.client.gui.render.state.GuiElementRenderState;
-import org.joml.Matrix3x2fc;
+import org.joml.Matrix3x2f;
 import org.jspecify.annotations.Nullable;
 
 @Environment(EnvType.CLIENT)
@@ -19,7 +19,7 @@ public record HaloFontRenderState(
     HaloFont font,
     MsdfFont msdfFont,
     String text,
-    Matrix3x2fc pose,
+    Matrix3x2f pose,
     float x, float y,
     float size,
     int color,
@@ -30,14 +30,14 @@ public record HaloFontRenderState(
     /**
      * Constructor for legacy HaloFont (STB bitmap font).
      */
-    public HaloFontRenderState(HaloFont font, String text, Matrix3x2fc pose, float x, float y, int color, @Nullable ScreenRectangle scissorArea) {
+    public HaloFontRenderState(HaloFont font, String text, Matrix3x2f pose, float x, float y, int color, @Nullable ScreenRectangle scissorArea) {
         this(HaloRenderPipelines.FONT, font.getTextureSetup(), font, null, text, pose, x, y, 0, color, scissorArea, getBoundsLegacy(x, y, text, font, pose, scissorArea));
     }
 
     /**
      * Constructor for MSDF font — crisp text at any scale.
      */
-    public HaloFontRenderState(MsdfFont msdfFont, String text, Matrix3x2fc pose, float x, float y, float size, int color, @Nullable ScreenRectangle scissorArea) {
+    public HaloFontRenderState(MsdfFont msdfFont, String text, Matrix3x2f pose, float x, float y, float size, int color, @Nullable ScreenRectangle scissorArea) {
         this(HaloRenderPipelines.MSDF_FONT, msdfFont.getTextureSetup(), null, msdfFont, text, pose, x, y, size, color, scissorArea, getBoundsMsdf(x, y, text, msdfFont, size, pose, scissorArea));
     }
 
@@ -54,7 +54,7 @@ public record HaloFontRenderState(
     }
 
     @Nullable
-    private static ScreenRectangle getBoundsLegacy(float x, float y, String text, HaloFont font, Matrix3x2fc pose, @Nullable ScreenRectangle scissorArea) {
+    private static ScreenRectangle getBoundsLegacy(float x, float y, String text, HaloFont font, Matrix3x2f pose, @Nullable ScreenRectangle scissorArea) {
         float width = font.getWidth(text);
         float height = font.getHeight();
         ScreenRectangle bounds = (new ScreenRectangle((int)x, (int)y, (int)width, (int)height)).transformMaxBounds(pose);
@@ -62,7 +62,7 @@ public record HaloFontRenderState(
     }
 
     @Nullable
-    private static ScreenRectangle getBoundsMsdf(float x, float y, String text, MsdfFont msdfFont, float size, Matrix3x2fc pose, @Nullable ScreenRectangle scissorArea) {
+    private static ScreenRectangle getBoundsMsdf(float x, float y, String text, MsdfFont msdfFont, float size, Matrix3x2f pose, @Nullable ScreenRectangle scissorArea) {
         float width = msdfFont.getWidth(text, size);
         float height = msdfFont.getHeight(size);
         ScreenRectangle bounds = (new ScreenRectangle((int)x, (int)y, (int)width, (int)height)).transformMaxBounds(pose);
@@ -71,7 +71,7 @@ public record HaloFontRenderState(
 
     @Override public RenderPipeline pipeline() { return pipeline; }
     @Override public TextureSetup textureSetup() { return textureSetup; }
-    @Override public Matrix3x2fc pose() { return pose; }
+    @Override public Matrix3x2f pose() { return pose; }
     @Nullable @Override public ScreenRectangle scissorArea() { return scissorArea; }
     @Nullable @Override public ScreenRectangle bounds() { return bounds; }
 }

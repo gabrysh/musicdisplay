@@ -46,7 +46,7 @@ public class Panel {
         int headerColor = ARGB.color(200, 20, 20, 20);
 
         // Draw header
-        graphics.guiRenderState.addGuiElement(new BlurredRoundedRectangleRenderState(
+        graphics.guiRenderState.submitGuiElement(new BlurredRoundedRectangleRenderState(
                 HaloRenderPipelines.ROUNDED_BLUR,
                 textureSetup,
                 new Matrix3x2f(graphics.pose()),
@@ -61,7 +61,7 @@ public class Panel {
         // Draw category name
         var font = FontManager.getFont("productsans-bold.ttf", 18f);
         if (font != null) {
-            graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+            graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                     font,
                     category.getName(),
                     new Matrix3x2f(graphics.pose()),

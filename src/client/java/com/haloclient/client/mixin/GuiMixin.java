@@ -14,7 +14,7 @@ public class GuiMixin {
 
  
 
-    @Inject(method = "extractRenderState", at = @At("TAIL"))
+    @Inject(method = "render", at = @At("TAIL"))
     private void halo$onAfterExtractRenderState(GuiGraphics graphics, DeltaTracker deltaTracker, CallbackInfo ci) {
         HaloClient.renderModules(graphics, deltaTracker);
     }

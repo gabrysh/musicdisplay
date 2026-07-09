@@ -45,7 +45,7 @@ public class ColorPickerElement {
         if (extractPass) {
             if (graphics != null && pose != null && textureSetup != null) {
                 // Card background
-                graphics.guiRenderState.addGuiElement(new BlurredRoundedRectangleRenderState(
+                graphics.guiRenderState.submitGuiElement(new BlurredRoundedRectangleRenderState(
                         HaloRenderPipelines.ROUNDED_BLUR,
                         textureSetup,
                         pose,
@@ -58,7 +58,7 @@ public class ColorPickerElement {
                 ));
 
                 // Colored square preview
-                graphics.guiRenderState.addGuiElement(new BlurredRoundedRectangleRenderState(
+                graphics.guiRenderState.submitGuiElement(new BlurredRoundedRectangleRenderState(
                         HaloRenderPipelines.ROUNDED_BLUR,
                         textureSetup,
                         pose,
@@ -73,7 +73,7 @@ public class ColorPickerElement {
                 // Label Text
                 var font = MsdfFontManager.getFont("productsans-semibold", 6f);
                 if (font != null) {
-                    graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+                    graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                             font,
                             label,
                             new Matrix3x2f(pose),
@@ -129,7 +129,7 @@ public class ColorPickerElement {
         if (extractPass) {
             if (graphics != null && popupPose != null && textureSetup != null) {
                 // Combobox background
-                graphics.guiRenderState.addGuiElement(new BlurredRoundedRectangleRenderState(
+                graphics.guiRenderState.submitGuiElement(new BlurredRoundedRectangleRenderState(
                         HaloRenderPipelines.ROUNDED_BLUR,
                         textureSetup,
                         popupPose,
@@ -142,7 +142,7 @@ public class ColorPickerElement {
                 ));
 
                 // Input background
-                graphics.guiRenderState.addGuiElement(new BlurredRoundedRectangleRenderState(
+                graphics.guiRenderState.submitGuiElement(new BlurredRoundedRectangleRenderState(
                         HaloRenderPipelines.ROUNDED_BLUR,
                         textureSetup,
                         popupPose,
@@ -158,7 +158,7 @@ public class ColorPickerElement {
                 float copyBtnX = hexX + inputW + 4.0f;
                 boolean copyHovered = ClickGUI.isHovered(mouseX, mouseY, copyBtnX, hexY, btnW, hexH);
                 int copyBg = copyHovered ? ARGB.color(185, 0, 0, 0) : ARGB.color(165, 0, 0, 0);
-                graphics.guiRenderState.addGuiElement(new BlurredRoundedRectangleRenderState(
+                graphics.guiRenderState.submitGuiElement(new BlurredRoundedRectangleRenderState(
                         HaloRenderPipelines.ROUNDED_BLUR,
                         textureSetup,
                         popupPose,
@@ -174,7 +174,7 @@ public class ColorPickerElement {
                 float pasteBtnX = copyBtnX + btnW + 4.0f;
                 boolean pasteHovered = ClickGUI.isHovered(mouseX, mouseY, pasteBtnX, hexY, btnW, hexH);
                 int pasteBg = pasteHovered ? ARGB.color(185, 0, 0, 0) : ARGB.color(165, 0, 0, 0);
-                graphics.guiRenderState.addGuiElement(new BlurredRoundedRectangleRenderState(
+                graphics.guiRenderState.submitGuiElement(new BlurredRoundedRectangleRenderState(
                         HaloRenderPipelines.ROUNDED_BLUR,
                         textureSetup,
                         popupPose,
@@ -188,7 +188,7 @@ public class ColorPickerElement {
 
                 var itemFont = MsdfFontManager.getFont("productsans-semibold", 6f);
                 if (itemFont != null) {
-                    graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+                    graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                             itemFont,
                             gui.selectedTarget.getName(),
                             popupPose,
@@ -215,7 +215,7 @@ public class ColorPickerElement {
                     arrowPose.rotate((float) (Math.PI / 2.0 + (1.0 - progress) * Math.PI)); // closed=270° (down), open=90° (up)
                     arrowPose.translate(-arrowCenterX, -arrowCenterY);
 
-                    graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+                    graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                             iconFont,
                             arrowChar,
                             arrowPose,
@@ -238,7 +238,7 @@ public class ColorPickerElement {
                 Matrix3x2f closePose1 = new Matrix3x2f(popupPose);
                 closePose1.translate(closeBtnX + closeBtnW / 2.0f, closeBtnY + closeBtnH / 2.0f);
                 closePose1.rotate((float) Math.toRadians(45));
-                graphics.guiRenderState.addGuiElement(new RoundedRectangleRenderState(
+                graphics.guiRenderState.submitGuiElement(new RoundedRectangleRenderState(
                         HaloRenderPipelines.ROUNDED_RECT,
                         closePose1,
                         -4.0f, -0.5f, 8.0f, 1.0f,
@@ -250,7 +250,7 @@ public class ColorPickerElement {
                 Matrix3x2f closePose2 = new Matrix3x2f(popupPose);
                 closePose2.translate(closeBtnX + closeBtnW / 2.0f, closeBtnY + closeBtnH / 2.0f);
                 closePose2.rotate((float) Math.toRadians(-45));
-                graphics.guiRenderState.addGuiElement(new RoundedRectangleRenderState(
+                graphics.guiRenderState.submitGuiElement(new RoundedRectangleRenderState(
                         HaloRenderPipelines.ROUNDED_RECT,
                         closePose2,
                         -4.0f, -0.5f, 8.0f, 1.0f,
@@ -264,7 +264,7 @@ public class ColorPickerElement {
                 hueRGB = (hueRGB & 0x00FFFFFF) | 0xFF000000;
 
                 // Horizontal: white -> hue color (90 degrees)
-                graphics.guiRenderState.addGuiElement(new RoundedRectangleRenderState(
+                graphics.guiRenderState.submitGuiElement(new RoundedRectangleRenderState(
                         HaloRenderPipelines.ROUNDED_RECT,
                         popupPose,
                         sbX, sbY, sbW, sbH,
@@ -274,7 +274,7 @@ public class ColorPickerElement {
                 ));
 
                 // Vertical: transparent -> black (0 degrees)
-                graphics.guiRenderState.addGuiElement(new RoundedRectangleRenderState(
+                graphics.guiRenderState.submitGuiElement(new RoundedRectangleRenderState(
                         HaloRenderPipelines.ROUNDED_RECT,
                         popupPose,
                         sbX, sbY, sbW, sbH,
@@ -288,7 +288,7 @@ public class ColorPickerElement {
                 float indY = sbY + (1.0f - gui.animatedCpBri) * sbH;
                 float circleScale = gui.selectorCircleAnimation.getValue();
                 float circleRadius = 4.0f + 1.5f * circleScale;
-                graphics.guiRenderState.addGuiElement(new RoundedRectangleRenderState(
+                graphics.guiRenderState.submitGuiElement(new RoundedRectangleRenderState(
                         HaloRenderPipelines.ROUNDED_RECT,
                         popupPose,
                         indX - circleRadius, indY - circleRadius, circleRadius * 2.0f, circleRadius * 2.0f,
@@ -320,7 +320,7 @@ public class ColorPickerElement {
                         cornerMask = 3.0f; // Round bottom, sharp top (clear p.y < 0)
                     }
 
-                    graphics.guiRenderState.addGuiElement(new BlurredRoundedRectangleRenderState(
+                    graphics.guiRenderState.submitGuiElement(new BlurredRoundedRectangleRenderState(
                             HaloRenderPipelines.ROUNDED_BLUR,
                             textureSetup,
                             popupPose,
@@ -337,7 +337,7 @@ public class ColorPickerElement {
 
                 // Hue indicator (styled like the alpha indicator: solid horizontal bar wrapping the slider)
                 float hueIndY = hueY + gui.cpHue * sbH;
-                graphics.guiRenderState.addGuiElement(new RoundedRectangleRenderState(
+                graphics.guiRenderState.submitGuiElement(new RoundedRectangleRenderState(
                         HaloRenderPipelines.ROUNDED_RECT,
                         popupPose,
                         hueX - 1.0f, hueIndY - 1.5f, hueBarW + 2.0f, 3.0f,
@@ -354,7 +354,7 @@ public class ColorPickerElement {
                 int darkColor = ARGB.color(alpha, 20, 20, 22);
                 int opaqueColor = ARGB.color(alpha, cr, cg, cb);
 
-                graphics.guiRenderState.addGuiElement(new BlurredRoundedRectangleRenderState(
+                graphics.guiRenderState.submitGuiElement(new BlurredRoundedRectangleRenderState(
                         HaloRenderPipelines.ROUNDED_BLUR,
                         textureSetup,
                         popupPose,
@@ -369,7 +369,7 @@ public class ColorPickerElement {
 
                 // Alpha indicator
                 float alphaIndX = alphaSliderX + gui.cpAlpha * innerW;
-                graphics.guiRenderState.addGuiElement(new RoundedRectangleRenderState(
+                graphics.guiRenderState.submitGuiElement(new RoundedRectangleRenderState(
                         HaloRenderPipelines.ROUNDED_RECT,
                         popupPose,
                         alphaIndX - 1.5f, alphaSliderY - 1.0f, 3.0f, alphaBarH + 2.0f,
@@ -392,7 +392,7 @@ public class ColorPickerElement {
                         float selW = font.getWidth(gui.hexInputText.substring(selMin, selMax), 6.0f);
                         float selHighlightX = hexX + 4.0f + hashW + beforeSelW;
 
-                        graphics.guiRenderState.addGuiElement(new RoundedRectangleRenderState(
+                        graphics.guiRenderState.submitGuiElement(new RoundedRectangleRenderState(
                                 HaloRenderPipelines.ROUNDED_RECT,
                                 popupPose,
                                 selHighlightX, hexY + 2.0f, selW, hexH - 4.0f,
@@ -403,7 +403,7 @@ public class ColorPickerElement {
                     }
 
                     // Text
-                    graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+                    graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                             font,
                             displayText,
                             new Matrix3x2f(popupPose),
@@ -426,7 +426,7 @@ public class ColorPickerElement {
                             float beforeCursorW = gui.hexCursor > 0 ? font.getWidth(gui.hexInputText.substring(0, gui.hexCursor), 6.0f) : 0;
                             float cursorDrawX = hexX + 4.0f + hashW + beforeCursorW;
 
-                            graphics.guiRenderState.addGuiElement(new RoundedRectangleRenderState(
+                            graphics.guiRenderState.submitGuiElement(new RoundedRectangleRenderState(
                                     HaloRenderPipelines.ROUNDED_RECT,
                                     popupPose,
                                     cursorDrawX, hexY + 3.0f, 1.0f, hexH - 6.0f,
@@ -441,7 +441,7 @@ public class ColorPickerElement {
                 // Copy/Paste button icons
                 var mdIconFont = MsdfFontManager.getFont("materialicons-regular", 7f);
                 if (mdIconFont != null) {
-                    graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+                    graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                             mdIconFont,
                             "\uE14D",
                             new Matrix3x2f(popupPose),
@@ -452,7 +452,7 @@ public class ColorPickerElement {
                             scissor
                     ));
 
-                    graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+                    graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                             mdIconFont,
                             "\uE14F",
                             new Matrix3x2f(popupPose),
@@ -479,7 +479,7 @@ public class ColorPickerElement {
                     ScreenRectangle comboScissor = scissor != null ? scissor.intersection(comboBounds) : comboBounds;
 
                     // Draw list background
-                    graphics.guiRenderState.addGuiElement(new BlurredRoundedRectangleRenderState(
+                    graphics.guiRenderState.submitGuiElement(new BlurredRoundedRectangleRenderState(
                             HaloRenderPipelines.ROUNDED_BLUR,
                             textureSetup,
                             popupPose,
@@ -497,7 +497,7 @@ public class ColorPickerElement {
                         boolean optHovered = ClickGUI.isHovered(mouseX, mouseY, comboX, optY, comboW, optionH) && mouseY <= listY + animListH;
 
                         if (optHovered && gui.comboboxOpen) {
-                            graphics.guiRenderState.addGuiElement(new BlurredRoundedRectangleRenderState(
+                            graphics.guiRenderState.submitGuiElement(new BlurredRoundedRectangleRenderState(
                                     HaloRenderPipelines.ROUNDED_BLUR,
                                     textureSetup,
                                     popupPose,
@@ -513,7 +513,7 @@ public class ColorPickerElement {
                         int col = (target == gui.selectedTarget) ? ARGB.color(alpha, 255, 255, 255) : ARGB.color(alpha, 161, 161, 170);
 
                         if (target == gui.selectedTarget) {
-                            graphics.guiRenderState.addGuiElement(new BlurredRoundedRectangleRenderState(
+                            graphics.guiRenderState.submitGuiElement(new BlurredRoundedRectangleRenderState(
                                     HaloRenderPipelines.ROUNDED_BLUR,
                                     textureSetup,
                                     popupPose,
@@ -528,7 +528,7 @@ public class ColorPickerElement {
 
                         var subFont = MsdfFontManager.getFont("productsans-semibold", 5.5f);
                         if (subFont != null) {
-                            graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+                            graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                                     subFont,
                                     target.getName(),
                                     new Matrix3x2f(popupPose),

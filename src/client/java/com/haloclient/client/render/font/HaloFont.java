@@ -10,7 +10,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.render.TextureSetup;
 import net.minecraft.resources.ResourceLocation;
-import org.joml.Matrix3x2fc;
+import org.joml.Matrix3x2f;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.stb.STBTTFontinfo;
 import org.lwjgl.stb.STBTTPackedchar;
@@ -72,7 +72,7 @@ public class HaloFont {
         this.textureSetup = TextureSetup.singleTexture(view);
     }
 
-    public void drawString(VertexConsumer buffer, HaloVertexConsumer hv, Matrix3x2fc pose, String text, float x, float y, int color) {
+    public void drawString(VertexConsumer buffer, HaloVertexConsumer hv, Matrix3x2f pose, String text, float x, float y, int color) {
         float currentX = x;
 
         for (char c : text.toCharArray()) {
@@ -101,7 +101,7 @@ public class HaloFont {
         }
     }
 
-    private void addVertex(VertexConsumer v, HaloVertexConsumer hv, Matrix3x2fc pose, float vx, float vy, float u, float vCoord, int color) {
+    private void addVertex(VertexConsumer v, HaloVertexConsumer hv, Matrix3x2f pose, float vx, float vy, float u, float vCoord, int color) {
         v.addVertexWith2DPose(pose, vx, vy).setColor(color).setUv(u, vCoord);
         hv.setCustomData(0, 0, 0, 0); // No special rect params
         hv.setColor2(0);

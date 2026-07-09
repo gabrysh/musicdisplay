@@ -36,7 +36,7 @@ public class CheckboxElement {
         if (extractPass) {
             if (graphics != null && pose != null && textureSetup != null) {
                 // Card background
-                graphics.guiRenderState.addGuiElement(new BlurredRoundedRectangleRenderState(
+                graphics.guiRenderState.submitGuiElement(new BlurredRoundedRectangleRenderState(
                         HaloRenderPipelines.ROUNDED_BLUR,
                         textureSetup,
                         pose,
@@ -58,7 +58,7 @@ public class CheckboxElement {
                     trackColor = lerpColor(cFrom, cTo, animProgress);
                 }
                 
-                graphics.guiRenderState.addGuiElement(new BlurredRoundedRectangleRenderState(
+                graphics.guiRenderState.submitGuiElement(new BlurredRoundedRectangleRenderState(
                         HaloRenderPipelines.ROUNDED_BLUR,
                         textureSetup,
                         pose,
@@ -73,7 +73,7 @@ public class CheckboxElement {
                 // Text
                 var font = MsdfFontManager.getFont("productsans-semibold", 6f);
                 if (font != null) {
-                    graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+                    graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                             font,
                             label,
                             new Matrix3x2f(pose),
@@ -88,7 +88,7 @@ public class CheckboxElement {
                 float knobX = rx + 1.0f + animProgress * (trackW - knobSize - 2.0f);
                 float knobY = ry + 1.0f;
                 int knobColor = disabled ? ARGB.color(255, 80, 80, 80) : ARGB.color(255, 255, 255, 255);
-                graphics.guiRenderState.addGuiElement(new BlurredRoundedRectangleRenderState(
+                graphics.guiRenderState.submitGuiElement(new BlurredRoundedRectangleRenderState(
                         HaloRenderPipelines.ROUNDED_BLUR,
                         textureSetup,
                         pose,

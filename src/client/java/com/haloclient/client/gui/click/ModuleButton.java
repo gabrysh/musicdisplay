@@ -33,7 +33,7 @@ public class ModuleButton {
         }
 
         var textureSetup = CaptureManager.getCaptureTextureSetup();
-        graphics.guiRenderState.addGuiElement(new BlurredRoundedRectangleRenderState(
+        graphics.guiRenderState.submitGuiElement(new BlurredRoundedRectangleRenderState(
                 HaloRenderPipelines.ROUNDED_BLUR,
                 textureSetup,
                 new Matrix3x2f(graphics.pose()),
@@ -47,7 +47,7 @@ public class ModuleButton {
 
         var font = FontManager.getFont("productsans-bold.ttf", 16f);
         if (font != null) {
-            graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+            graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                     font,
                     module.getName(),
                     new Matrix3x2f(graphics.pose()),

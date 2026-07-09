@@ -8,7 +8,7 @@ import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.render.TextureSetup;
 import net.minecraft.client.gui.render.state.GuiElementRenderState;
-import org.joml.Matrix3x2fc;
+import org.joml.Matrix3x2f;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -27,7 +27,7 @@ import org.jspecify.annotations.Nullable;
 public record ImageRenderState(
     RenderPipeline pipeline,
     TextureSetup textureSetup,
-    Matrix3x2fc pose,
+    Matrix3x2f pose,
     float x, float y, float width, float height,
     int tintColor,
     float radius,
@@ -72,7 +72,7 @@ public record ImageRenderState(
     public ImageRenderState(
         final RenderPipeline pipeline,
         final TextureSetup textureSetup,
-        final Matrix3x2fc pose,
+        final Matrix3x2f pose,
         float x, float y, float width, float height,
         final int tintColor,
         final float radius,
@@ -113,7 +113,7 @@ public record ImageRenderState(
     public ImageRenderState(
         final RenderPipeline pipeline,
         final TextureSetup textureSetup,
-        final Matrix3x2fc pose,
+        final Matrix3x2f pose,
         final float x, final float y, final float width, final float height,
         final int imageWidth, final int imageHeight,
         @Nullable final ScreenRectangle scissorArea
@@ -132,7 +132,7 @@ public record ImageRenderState(
     public ImageRenderState(
         final RenderPipeline pipeline,
         final TextureSetup textureSetup,
-        final Matrix3x2fc pose,
+        final Matrix3x2f pose,
         final float x, final float y, final float width, final float height,
         final int tintColor,
         final float radius,
@@ -279,14 +279,14 @@ public record ImageRenderState(
     // ============================================
 
     @Nullable
-    private static ScreenRectangle getBounds(float x, float y, float w, float h, Matrix3x2fc pose, @Nullable ScreenRectangle scissorArea) {
+    private static ScreenRectangle getBounds(float x, float y, float w, float h, Matrix3x2f pose, @Nullable ScreenRectangle scissorArea) {
         ScreenRectangle bounds = (new ScreenRectangle((int) x, (int) y, (int) w, (int) h)).transformMaxBounds(pose);
         return scissorArea != null ? scissorArea.intersection(bounds) : bounds;
     }
 
     @Override public RenderPipeline pipeline() { return pipeline; }
     @Override public TextureSetup textureSetup() { return textureSetup; }
-    @Override public Matrix3x2fc pose() { return pose; }
+    @Override public Matrix3x2f pose() { return pose; }
     @Nullable @Override public ScreenRectangle scissorArea() { return scissorArea; }
     @Nullable @Override public ScreenRectangle bounds() { return bounds; }
 }

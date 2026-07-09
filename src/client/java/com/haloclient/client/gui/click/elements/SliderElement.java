@@ -41,7 +41,7 @@ public class SliderElement {
         if (extractPass) {
             if (graphics != null && pose != null && textureSetup != null) {
                 // Card background
-                graphics.guiRenderState.addGuiElement(new BlurredRoundedRectangleRenderState(
+                graphics.guiRenderState.submitGuiElement(new BlurredRoundedRectangleRenderState(
                         HaloRenderPipelines.ROUNDED_BLUR,
                         textureSetup,
                         pose,
@@ -54,7 +54,7 @@ public class SliderElement {
                 ));
 
                 // Draw track (Zinc 800)
-                graphics.guiRenderState.addGuiElement(new BlurredRoundedRectangleRenderState(
+                graphics.guiRenderState.submitGuiElement(new BlurredRoundedRectangleRenderState(
                         HaloRenderPipelines.ROUNDED_BLUR,
                         textureSetup,
                         pose,
@@ -68,7 +68,7 @@ public class SliderElement {
 
                 // Draw fill (White)
                 if (fillWidth > 0) {
-                    graphics.guiRenderState.addGuiElement(new BlurredRoundedRectangleRenderState(
+                    graphics.guiRenderState.submitGuiElement(new BlurredRoundedRectangleRenderState(
                             HaloRenderPipelines.ROUNDED_BLUR,
                             textureSetup,
                             pose,
@@ -82,7 +82,7 @@ public class SliderElement {
                 }
 
                 // Draw knob (White circle)
-                graphics.guiRenderState.addGuiElement(new BlurredRoundedRectangleRenderState(
+                graphics.guiRenderState.submitGuiElement(new BlurredRoundedRectangleRenderState(
                         HaloRenderPipelines.ROUNDED_BLUR,
                         textureSetup,
                         pose,
@@ -97,7 +97,7 @@ public class SliderElement {
                 // Label Text
                 var font = MsdfFontManager.getFont("productsans-semibold", 6f);
                 if (font != null) {
-                    graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+                    graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                             font,
                             label,
                             new Matrix3x2f(pose),
@@ -112,7 +112,7 @@ public class SliderElement {
                 // Value Text
                 var valueFont = MsdfFontManager.getFont("productsans-semibold", 5.5f);
                 if (valueFont != null) {
-                    graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
+                    graphics.guiRenderState.submitGuiElement(new HaloFontRenderState(
                             valueFont,
                             valueText,
                             new Matrix3x2f(pose),

@@ -8,7 +8,7 @@ import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.render.TextureSetup;
 import net.minecraft.client.gui.render.state.GuiElementRenderState;
-import org.joml.Matrix3x2fc;
+import org.joml.Matrix3x2f;
 import org.joml.Vector2f;
 import org.jspecify.annotations.Nullable;
 
@@ -20,7 +20,7 @@ import org.jspecify.annotations.Nullable;
 public record BlurredQuadRenderState(
     RenderPipeline pipeline,
     TextureSetup textureSetup,
-    Matrix3x2fc pose,
+    Matrix3x2f pose,
     Vector2f p1, Vector2f p2, Vector2f p3, Vector2f p4,
     int color,
     float sizeWidth, float sizeHeight,
@@ -31,7 +31,7 @@ public record BlurredQuadRenderState(
 
     // Konstruktor z ręcznym rozmiarem (używany do fixowania przerw w 3D boxie)
     public BlurredQuadRenderState(
-        RenderPipeline pipeline, TextureSetup textureSetup, Matrix3x2fc pose,
+        RenderPipeline pipeline, TextureSetup textureSetup, Matrix3x2f pose,
         Vector2f p1, Vector2f p2, Vector2f p3, Vector2f p4,
         int color, float sizeWidth, float sizeHeight,
         float blurStrength, @Nullable ScreenRectangle scissorArea
@@ -43,7 +43,7 @@ public record BlurredQuadRenderState(
 
     // Konstruktor domyślny (oblicza rozmiar z dystansu między punktami)
     public BlurredQuadRenderState(
-        RenderPipeline pipeline, TextureSetup textureSetup, Matrix3x2fc pose,
+        RenderPipeline pipeline, TextureSetup textureSetup, Matrix3x2f pose,
         Vector2f p1, Vector2f p2, Vector2f p3, Vector2f p4,
         int color,
         float blurStrength, @Nullable ScreenRectangle scissorArea
@@ -54,7 +54,7 @@ public record BlurredQuadRenderState(
             calculateBounds(p1, p2, p3, p4, pose, scissorArea));
     }
 
-    private static ScreenRectangle calculateBounds(Vector2f p1, Vector2f p2, Vector2f p3, Vector2f p4, Matrix3x2fc pose, @Nullable ScreenRectangle scissor) {
+    private static ScreenRectangle calculateBounds(Vector2f p1, Vector2f p2, Vector2f p3, Vector2f p4, Matrix3x2f pose, @Nullable ScreenRectangle scissor) {
         float minX = Math.min(Math.min(p1.x, p2.x), Math.min(p3.x, p4.x));
         float minY = Math.min(Math.min(p1.y, p2.y), Math.min(p3.y, p4.y));
         float maxX = Math.max(Math.max(p1.x, p2.x), Math.max(p3.x, p4.x));
@@ -85,7 +85,7 @@ public record BlurredQuadRenderState(
 
     @Override public RenderPipeline pipeline() { return pipeline; }
     @Override public TextureSetup textureSetup() { return textureSetup; }
-    @Override public Matrix3x2fc pose() { return pose; }
+    @Override public Matrix3x2f pose() { return pose; }
     @Nullable @Override public ScreenRectangle scissorArea() { return scissorArea; }
     @Nullable @Override public ScreenRectangle bounds() { return bounds; }
 }
