@@ -1074,17 +1074,25 @@ public class ClickGUI extends Screen {
                     float playX = listX + listW - 12.0f;
                     float likeX = playX - 16.0f;
                     
+                    boolean subsonicSource = MusicManager.getActiveSource() == MusicManager.Source.SUBSONIC;
                     if (isHovered(mouseX, mouseY, playX - 5.0f, itemY, playBtnW + 10.0f, itemH)) {
-                        if (track.isPlaylist()) {
+                        if (subsonicSource) {
+                            SubsonicManager.getInstance().playSearchResult(track.id());
+                        } else if (track.isPlaylist()) {
                             SpotifyManager.getInstance().playPlaylist(track.id());
                         } else {
                             SpotifyManager.getInstance().playTrack(track.id());
                         }
                         return true;
                     }
-                    
+
                     if (isHovered(mouseX, mouseY, likeX - 5.0f, itemY, likeBtnW + 10.0f, itemH)) {
-                        if (!track.isPlaylist()) {
+                        if (subsonicSource) {
+                            SubsonicManager.getInstance().star(track.id(), !track.liked());
+                            searchResults.set(i, new SpotifyManager.SearchResultTrack(
+                                track.id(), track.title(), track.artist(), track.artworkUrl(), track.localArtworkPath(), !track.liked(), false
+                            ));
+                        } else if (!track.isPlaylist()) {
                             SpotifyManager.getInstance().likeTrack(track.id(), !track.liked());
                             searchResults.set(i, new SpotifyManager.SearchResultTrack(
                                 track.id(), track.title(), track.artist(), track.artworkUrl(), track.localArtworkPath(), !track.liked(), false
@@ -2026,8 +2034,11 @@ public class ClickGUI extends Screen {
         }
         searchLoading = true;
         SpotifyManager.SearchFilter filter = this.currentSearchFilter;
+        boolean subsonic = MusicManager.getActiveSource() == MusicManager.Source.SUBSONIC;
         java.util.concurrent.CompletableFuture.runAsync(() -> {
-            var results = SpotifyManager.getInstance().search(query, filter);
+            var results = subsonic
+                    ? SubsonicManager.getInstance().search(query)
+                    : SpotifyManager.getInstance().search(query, filter);
             Minecraft.getInstance().execute(() -> {
                 if (searchInputText.equals(query) && this.currentSearchFilter == filter) {
                     this.searchResults = results;

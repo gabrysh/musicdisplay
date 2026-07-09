@@ -147,6 +147,85 @@ public final class SubsonicManager {
     }
 
     // ------------------------------------------------------------------
+    // Library search (search3) — reuses the shared SearchResultTrack record
+    // ------------------------------------------------------------------
+
+    public java.util.List<SpotifyManager.SearchResultTrack> search(String query) {
+        java.util.List<SpotifyManager.SearchResultTrack> results = new java.util.ArrayList<>();
+        if (query == null || query.isBlank()) return results;
+        if (!(authorized && !baseUrl.isBlank() && !username.isBlank())) return results;
+        try {
+            HttpClient client = HttpClient.newBuilder()
+                    .version(HttpClient.Version.HTTP_1_1)
+                    .followRedirects(HttpClient.Redirect.NORMAL)
+                    .build();
+            String extra = "query=" + URLEncoder.encode(query, StandardCharsets.UTF_8)
+                    + "&songCount=10&artistCount=0&albumCount=0";
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(buildUrl("search3", extra, username, password, baseUrl)))
+                    .GET().build();
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() != 200) return results;
+            JsonObject resp = JsonParser.parseString(response.body()).getAsJsonObject()
+                    .getAsJsonObject("subsonic-response");
+            if (resp == null || !"ok".equals(getString(resp, "status", "failed"))) return results;
+            JsonObject sr = resp.has("searchResult3") && resp.get("searchResult3").isJsonObject()
+                    ? resp.getAsJsonObject("searchResult3") : null;
+            if (sr == null || !sr.has("song")) return results;
+            JsonArray songs = asArray(sr.get("song"));
+            int count = 0;
+            for (JsonElement el : songs) {
+                if (count >= 10 || el == null || !el.isJsonObject()) continue;
+                JsonObject s = el.getAsJsonObject();
+                String id = getString(s, "id", "");
+                if (id.isBlank()) continue;
+                String title = getString(s, "title", "");
+                String artist = getString(s, "artist", "");
+                String coverArt = getString(s, "coverArt", "");
+                String art = coverArt.isBlank() ? "" : downloadCoverArt(coverArt);
+                results.add(new SpotifyManager.SearchResultTrack(id, title, artist, "", art, false, false));
+                count++;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return results;
+    }
+
+    /** Stars / unstars a song on the server (the search list's "like" action). */
+    public void star(String id, boolean star) {
+        if (id == null || id.isBlank()) return;
+        if (!(authorized && !baseUrl.isBlank() && !username.isBlank())) return;
+        try {
+            HttpClient client = HttpClient.newBuilder()
+                    .version(HttpClient.Version.HTTP_1_1)
+                    .followRedirects(HttpClient.Redirect.NORMAL)
+                    .build();
+            String endpoint = star ? "star" : "unstar";
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(buildUrl(endpoint, "id=" + URLEncoder.encode(id, StandardCharsets.UTF_8),
+                            username, password, baseUrl)))
+                    .GET().build();
+            client.send(request, HttpResponse.BodyHandlers.discarding());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Best-effort "play" of a search result: asks the local MPRIS player to open the song's
+     * stream URL. Many library players ignore OpenUri, so this may be a no-op.
+     */
+    public void playSearchResult(String id) {
+        if (id == null || id.isBlank()) return;
+        if (!isMprisControllable()) return;
+        if (!(authorized && !baseUrl.isBlank() && !username.isBlank())) return;
+        String streamUrl = buildUrl("stream", "id=" + URLEncoder.encode(id, StandardCharsets.UTF_8),
+                username, password, baseUrl);
+        mpris.openUri(mprisPlayer, streamUrl);
+    }
+
+    // ------------------------------------------------------------------
     // Config persistence
     // ------------------------------------------------------------------
 

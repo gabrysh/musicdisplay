@@ -169,6 +169,12 @@ final class LinuxMediaProvider {
         if (player != null) callMethod(player, "Previous");
     }
 
+    void openUri(String player, String uri) {
+        if (player == null || uri == null) return;
+        run("gdbus", "call", "--session", "--dest", player, "--object-path", OBJ,
+                "--method", IFACE + ".OpenUri", uri);
+    }
+
     void setVolume(String player, int percent) {
         if (player == null) return;
         double vol = Math.max(0.0, Math.min(1.0, percent / 100.0));
