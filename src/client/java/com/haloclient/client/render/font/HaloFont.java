@@ -5,12 +5,11 @@ import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.GpuTexture;
 import com.mojang.blaze3d.textures.GpuTextureView;
-import com.mojang.blaze3d.textures.GpuSampler;
 import com.mojang.blaze3d.textures.TextureFormat;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.render.TextureSetup;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import org.joml.Matrix3x2fc;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.stb.STBTTFontinfo;
@@ -68,15 +67,9 @@ public class HaloFont {
         var encoder = RenderSystem.getDevice().createCommandEncoder();
         encoder.writeToTexture(texture, bitmap, NativeImage.Format.LUMINANCE, 0, 0, 0, 0, width, height);
 
-        GpuSampler sampler = RenderSystem.getDevice().createSampler(
-            com.mojang.blaze3d.textures.AddressMode.CLAMP_TO_EDGE,
-            com.mojang.blaze3d.textures.AddressMode.CLAMP_TO_EDGE,
-            com.mojang.blaze3d.textures.FilterMode.LINEAR,
-            com.mojang.blaze3d.textures.FilterMode.LINEAR,
-            1, java.util.OptionalDouble.empty()
-        );
-
-        this.textureSetup = TextureSetup.singleTexture(view, sampler);
+        texture.setTextureFilter(com.mojang.blaze3d.textures.FilterMode.LINEAR, com.mojang.blaze3d.textures.FilterMode.LINEAR, false);
+        texture.setAddressMode(com.mojang.blaze3d.textures.AddressMode.CLAMP_TO_EDGE, com.mojang.blaze3d.textures.AddressMode.CLAMP_TO_EDGE);
+        this.textureSetup = TextureSetup.singleTexture(view);
     }
 
     public void drawString(VertexConsumer buffer, HaloVertexConsumer hv, Matrix3x2fc pose, String text, float x, float y, int color) {

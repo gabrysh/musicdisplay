@@ -13,7 +13,7 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.DeltaTracker;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.util.ARGB;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix3x2f;
@@ -35,7 +35,7 @@ public class HaloClient implements ClientModInitializer {
     public static HaloClient INSTANCE;
     public ModuleManager moduleManager;
 
-    public static final net.minecraft.client.KeyMapping.Category HALO_CATEGORY = net.minecraft.client.KeyMapping.Category.register(net.minecraft.resources.Identifier.fromNamespaceAndPath("halo", "halo"));
+    public static final net.minecraft.client.KeyMapping.Category HALO_CATEGORY = net.minecraft.client.KeyMapping.Category.register(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("halo", "halo"));
 
     public static final net.minecraft.client.KeyMapping openClickGuiKey = new net.minecraft.client.KeyMapping(
             "key.halo.clickgui",
@@ -95,7 +95,7 @@ public class HaloClient implements ClientModInitializer {
         return moduleManager;
     }
 
-    public static void renderModules(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
+    public static void renderModules(GuiGraphics graphics, DeltaTracker deltaTracker) {
         FrameClock.update();
 
         if (INSTANCE != null && INSTANCE.moduleManager != null) {
@@ -105,7 +105,7 @@ public class HaloClient implements ClientModInitializer {
         }
     }
 
-    public static void renderRounded(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
+    public static void renderRounded(GuiGraphics graphics, DeltaTracker deltaTracker) {
         renderModules(graphics, deltaTracker);
 
         // 1. RENDER A BLURRED ROUNDED RECT
@@ -199,7 +199,7 @@ public class HaloClient implements ClientModInitializer {
         }
     }
 
-    public static void renderWorldBox(GuiGraphicsExtractor graphics, double ex, double ey, double ez) {
+    public static void renderWorldBox(GuiGraphics graphics, double ex, double ey, double ez) {
         var mc = Minecraft.getInstance();
         if (mc.level == null || mc.gameRenderer == null) return;
 

@@ -30,14 +30,10 @@ public class CaptureManager {
             cleanup();
             // Inicjalizacja bufora dokładnie na wymiary klatki
             captureTexture = RenderSystem.getDevice().createTexture("Halo Blur Buffer", 15, screenTex.getFormat(), w, h, 1, 1);
+            captureTexture.setTextureFilter(com.mojang.blaze3d.textures.FilterMode.LINEAR, com.mojang.blaze3d.textures.FilterMode.LINEAR, false);
+            captureTexture.setAddressMode(com.mojang.blaze3d.textures.AddressMode.CLAMP_TO_EDGE, com.mojang.blaze3d.textures.AddressMode.CLAMP_TO_EDGE);
             captureView = RenderSystem.getDevice().createTextureView(captureTexture);
-            textureSetup = TextureSetup.singleTexture(captureView, RenderSystem.getDevice().createSampler(
-                com.mojang.blaze3d.textures.AddressMode.CLAMP_TO_EDGE,
-                com.mojang.blaze3d.textures.AddressMode.CLAMP_TO_EDGE,
-                com.mojang.blaze3d.textures.FilterMode.LINEAR,
-                com.mojang.blaze3d.textures.FilterMode.LINEAR,
-                1, java.util.OptionalDouble.empty()
-            ));
+            textureSetup = TextureSetup.singleTexture(captureView);
         }
 
         try {

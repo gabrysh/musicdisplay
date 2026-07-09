@@ -1,7 +1,7 @@
 package com.haloclient.client.render.font;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -28,7 +28,7 @@ public class FontManager {
 
     private static void load(String fileName, float size) {
         try {
-            Identifier id = Identifier.fromNamespaceAndPath("halo", "fonts/" + fileName);
+            ResourceLocation id = ResourceLocation.fromNamespaceAndPath("halo", "fonts/" + fileName);
             InputStream is = Minecraft.getInstance().getResourceManager().open(id);
             fonts.put(fileName + "_" + size, new HaloFont(is, size));
             is.close();

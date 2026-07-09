@@ -4,13 +4,12 @@ import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.GpuTexture;
 import com.mojang.blaze3d.textures.GpuTextureView;
-import com.mojang.blaze3d.textures.GpuSampler;
 import com.mojang.blaze3d.textures.TextureFormat;
 import com.mojang.blaze3d.textures.AddressMode;
 import com.mojang.blaze3d.textures.FilterMode;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.render.TextureSetup;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.stb.STBImage;
 
@@ -31,7 +30,7 @@ import java.util.concurrent.Executors;
 
 /**
  * Menedżer obrazów obsługujący ładowanie tekstur z trzech źródeł:
- * 1. Identifier (zasoby Minecraft, np. "halo:icon.png")
+ * 1. ResourceLocation (zasoby Minecraft, np. "halo:icon.png")
  * 2. URL (obrazy z internetu, pobierane asynchronicznie)
  * 3. NativeImage (obrazy załadowane bezpośrednio z pamięci)
  *
@@ -47,8 +46,6 @@ public class ImageManager {
             .connectTimeout(Duration.ofSeconds(10))
             .followRedirects(HttpClient.Redirect.NORMAL)
             .build();
-
-    private static GpuSampler sharedSampler;
 
     /**
      * Cached image data zawierająca TextureSetup gotowy do użycia w renderowaniu
@@ -66,43 +63,26 @@ public class ImageManager {
         }
     }
 
-    /**
-     * Tworzy lub pobiera z cache współdzielony sampler z filtrowaniem LINEAR
-     * (bilinear filtering) dla najlepszej jakości skalowania obrazów.
-     */
-    private static GpuSampler getSharedSampler() {
-        if (sharedSampler == null) {
-            sharedSampler = RenderSystem.getDevice().createSampler(
-                AddressMode.CLAMP_TO_EDGE,
-                AddressMode.CLAMP_TO_EDGE,
-                FilterMode.LINEAR,
-                FilterMode.LINEAR,
-                8, OptionalDouble.empty()
-            );
-        }
-        return sharedSampler;
-    }
-
     // ==========================================
     // === ŁADOWANIE Z IDENTIFIER (ZASOBY MC) ===
     // ==========================================
 
     /**
-     * Ładuje obraz z zasobów Minecraft na podstawie Identifier.
-     * Np. fromIdentifier(Identifier.fromNamespaceAndPath("halo", "icon.png"))
+     * Ładuje obraz z zasobów Minecraft na podstawie ResourceLocation.
+     * Np. fromIdentifier(ResourceLocation.fromNamespaceAndPath("halo", "icon.png"))
      * szuka pliku w assets/halo/icon.png
      *
-     * @param id Identifier zasobu (np. "halo:icon.png")
+     * @param id ResourceLocation zasobu (np. "halo:icon.png")
      * @return CachedImage lub null jeśli nie znaleziono
      */
-    public static CachedImage fromIdentifier(Identifier id) {
+    public static CachedImage fromIdentifier(ResourceLocation id) {
         String key = "id:" + id.toString();
         CachedImage cached = CACHE.get(key);
         if (cached != null) return cached;
 
         try {
             // Pełna ścieżka do zasobu w assets/<namespace>/textures/<path>
-            Identifier texturePath = Identifier.fromNamespaceAndPath(id.getNamespace(), "textures/" + id.getPath());
+            ResourceLocation texturePath = ResourceLocation.fromNamespaceAndPath(id.getNamespace(), "textures/" + id.getPath());
             var resourceOpt = Minecraft.getInstance().getResourceManager().getResource(texturePath);
 
             if (resourceOpt.isEmpty()) {
@@ -272,6 +252,9 @@ public class ImageManager {
                 w, h, 1, mipLevels
         );
 
+        gpuTexture.setTextureFilter(FilterMode.LINEAR, FilterMode.LINEAR, false);
+        gpuTexture.setAddressMode(AddressMode.CLAMP_TO_EDGE, AddressMode.CLAMP_TO_EDGE);
+
         GpuTextureView gpuView = RenderSystem.getDevice().createTextureView(gpuTexture);
         var encoder = RenderSystem.getDevice().createCommandEncoder();
 
@@ -304,7 +287,7 @@ public class ImageManager {
         }
         STBImage.stbi_image_free(pixels);
 
-        TextureSetup textureSetup = TextureSetup.singleTexture(gpuView, getSharedSampler());
+        TextureSetup textureSetup = TextureSetup.singleTexture(gpuView);
 
         return new CachedImage(textureSetup, w, h, gpuTexture, gpuView);
     }

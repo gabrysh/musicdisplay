@@ -6,7 +6,7 @@ import com.haloclient.client.render.CaptureManager;
 import com.haloclient.client.render.HaloRenderPipelines;
 import com.haloclient.client.render.font.FontManager;
 import com.haloclient.client.render.font.HaloFontRenderState;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.util.ARGB;
 import org.joml.Matrix3x2f;
 
@@ -21,7 +21,7 @@ public class ModuleButton {
         this.offset = offset;
     }
 
-    public void drawScreen(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
+    public void drawScreen(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
         float x = parent.x;
         float y = parent.y + parent.height + offset;
         float width = parent.width;

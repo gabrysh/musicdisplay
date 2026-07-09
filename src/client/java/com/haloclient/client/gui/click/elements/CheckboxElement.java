@@ -7,7 +7,7 @@ import com.haloclient.client.render.font.MsdfFontManager;
 import com.haloclient.client.render.renderstates.BlurredRoundedRectangleRenderState;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.render.TextureSetup;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.util.ARGB;
 import org.joml.Matrix3x2f;
 import org.jspecify.annotations.Nullable;
@@ -15,7 +15,7 @@ import org.jspecify.annotations.Nullable;
 public class CheckboxElement {
 
     public static void drawCheckbox(
-            @Nullable GuiGraphicsExtractor graphics,
+            @Nullable GuiGraphics graphics,
             @Nullable Matrix3x2f pose,
             @Nullable TextureSetup textureSetup,
             @Nullable ScreenRectangle scissor,

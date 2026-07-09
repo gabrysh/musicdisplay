@@ -1,7 +1,7 @@
 package com.haloclient.client.render.font;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 
 import java.io.InputStream;
 import java.util.HashMap;
@@ -28,8 +28,8 @@ public class MsdfFontManager {
         }
 
         try {
-            Identifier imageId = Identifier.fromNamespaceAndPath("halo", "fonts/msdf/" + name + ".png");
-            Identifier jsonId = Identifier.fromNamespaceAndPath("halo", "fonts/msdf/" + name + ".json");
+            ResourceLocation imageId = ResourceLocation.fromNamespaceAndPath("halo", "fonts/msdf/" + name + ".png");
+            ResourceLocation jsonId = ResourceLocation.fromNamespaceAndPath("halo", "fonts/msdf/" + name + ".json");
 
             InputStream imageStream = Minecraft.getInstance().getResourceManager().open(imageId);
             InputStream jsonStream = Minecraft.getInstance().getResourceManager().open(jsonId);

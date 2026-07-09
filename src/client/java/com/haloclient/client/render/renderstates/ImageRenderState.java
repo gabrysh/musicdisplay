@@ -7,12 +7,12 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.render.TextureSetup;
-import net.minecraft.client.renderer.state.gui.GuiElementRenderState;
+import net.minecraft.client.gui.render.state.GuiElementRenderState;
 import org.joml.Matrix3x2fc;
 import org.jspecify.annotations.Nullable;
 
 /**
- * RenderState do renderowania obrazów (Identifier, URL, NativeImage)
+ * RenderState do renderowania obrazów (ResourceLocation, URL, NativeImage)
  * z obsługą:
  * - Zaokrąglonych rogów (SDF rounded corners)
  * - Trzech trybów skalowania (FILL, FIT, STRETCH)

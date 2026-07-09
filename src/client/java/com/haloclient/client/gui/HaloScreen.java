@@ -6,7 +6,7 @@ import com.haloclient.client.render.HaloRenderPipelines;
 import com.haloclient.client.render.animation.Animation;
 import com.haloclient.client.render.animation.Easing;
 import com.haloclient.client.util.FrameClock;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.ARGB;
@@ -23,7 +23,7 @@ public class HaloScreen extends Screen {
     }
 
     @Override
-    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
+    public void extractRenderState(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
         FrameClock.update();
         scaleAnimation.run(closing ? 0.0f : 1.0f);
         
@@ -77,7 +77,7 @@ public class HaloScreen extends Screen {
     }
 
     @Override
-    public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
+    public void extractBackground(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
 
     }
 

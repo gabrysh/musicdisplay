@@ -4,7 +4,7 @@ import com.haloclient.client.gui.click.MusicDisplayOverlay;
 import com.haloclient.client.module.Category;
 import com.haloclient.client.module.Module;
 import net.minecraft.client.DeltaTracker;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 
 public class MusicDisplayModule extends Module {
 
@@ -14,7 +14,7 @@ public class MusicDisplayModule extends Module {
     }
 
     @Override
-    public void onRender(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
+    public void onRender(GuiGraphics graphics, DeltaTracker deltaTracker) {
         MusicDisplayOverlay.render(graphics);
     }
 }

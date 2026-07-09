@@ -9,7 +9,6 @@ import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.GpuTexture;
 import com.mojang.blaze3d.textures.GpuTextureView;
-import com.mojang.blaze3d.textures.GpuSampler;
 import com.mojang.blaze3d.textures.TextureFormat;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.gui.render.TextureSetup;
@@ -172,15 +171,9 @@ public class MsdfFont {
         encoder.writeToTexture(texture, pixels, NativeImage.Format.RGBA, 0, 0, 0, 0, imgW, imgH);
         image.close();
 
-        GpuSampler sampler = RenderSystem.getDevice().createSampler(
-                com.mojang.blaze3d.textures.AddressMode.CLAMP_TO_EDGE,
-                com.mojang.blaze3d.textures.AddressMode.CLAMP_TO_EDGE,
-                com.mojang.blaze3d.textures.FilterMode.LINEAR,
-                com.mojang.blaze3d.textures.FilterMode.LINEAR,
-                1, java.util.OptionalDouble.empty()
-        );
-
-        this.textureSetup = TextureSetup.singleTexture(view, sampler);
+        texture.setTextureFilter(com.mojang.blaze3d.textures.FilterMode.LINEAR, com.mojang.blaze3d.textures.FilterMode.LINEAR, false);
+        texture.setAddressMode(com.mojang.blaze3d.textures.AddressMode.CLAMP_TO_EDGE, com.mojang.blaze3d.textures.AddressMode.CLAMP_TO_EDGE);
+        this.textureSetup = TextureSetup.singleTexture(view);
     }
 
     /**

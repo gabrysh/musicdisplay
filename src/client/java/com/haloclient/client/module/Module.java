@@ -2,7 +2,7 @@ package com.haloclient.client.module;
 
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 
 public abstract class Module {
     protected static final Minecraft mc = Minecraft.getInstance();
@@ -58,7 +58,7 @@ public abstract class Module {
         setEnabled(!enabled);
     }
 
-    public void onRender(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {}
+    public void onRender(GuiGraphics graphics, DeltaTracker deltaTracker) {}
 
     protected void onEnable() {}
     protected void onDisable() {}

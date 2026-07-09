@@ -8,7 +8,7 @@ import com.haloclient.client.render.CaptureManager;
 import com.haloclient.client.render.HaloRenderPipelines;
 import com.haloclient.client.render.font.FontManager;
 import com.haloclient.client.render.font.HaloFontRenderState;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.util.ARGB;
 import org.joml.Matrix3x2f;
 import java.util.ArrayList;
@@ -36,7 +36,7 @@ public class Panel {
         }
     }
 
-    public void drawScreen(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
+    public void drawScreen(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
         if (dragging) {
             x = mouseX - dragX;
             y = mouseY - dragY;

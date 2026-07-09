@@ -2,7 +2,7 @@ package com.haloclient.client.mixin;
 
 import com.haloclient.client.HaloClient;
 import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.DeltaTracker;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -15,7 +15,7 @@ public class GuiMixin {
  
 
     @Inject(method = "extractRenderState", at = @At("TAIL"))
-    private void halo$onAfterExtractRenderState(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker, CallbackInfo ci) {
+    private void halo$onAfterExtractRenderState(GuiGraphics graphics, DeltaTracker deltaTracker, CallbackInfo ci) {
         HaloClient.renderModules(graphics, deltaTracker);
     }
 

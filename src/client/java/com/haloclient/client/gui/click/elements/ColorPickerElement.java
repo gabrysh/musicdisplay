@@ -8,7 +8,7 @@ import com.haloclient.client.render.renderstates.BlurredRoundedRectangleRenderSt
 import com.haloclient.client.render.renderstates.RoundedRectangleRenderState;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.render.TextureSetup;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.util.ARGB;
 import org.joml.Matrix3x2f;
 import org.jspecify.annotations.Nullable;
@@ -20,7 +20,7 @@ public class ColorPickerElement {
     private static final float POPUP_HEIGHT = 128.0f;
 
     public static void drawColorPicker(
-            @Nullable GuiGraphicsExtractor graphics,
+            @Nullable GuiGraphics graphics,
             @Nullable Matrix3x2f pose,
             @Nullable TextureSetup textureSetup,
             @Nullable ScreenRectangle scissor,
@@ -89,7 +89,7 @@ public class ColorPickerElement {
     }
 
     public static void drawColorPickerPopup(
-            @Nullable GuiGraphicsExtractor graphics,
+            @Nullable GuiGraphics graphics,
             @Nullable Matrix3x2f popupPose,
             @Nullable TextureSetup textureSetup,
             @Nullable ScreenRectangle scissor,

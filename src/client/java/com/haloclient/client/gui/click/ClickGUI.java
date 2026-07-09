@@ -11,11 +11,11 @@ import com.haloclient.client.render.animation.Animation;
 import com.haloclient.client.render.animation.Easing;
 import com.haloclient.client.render.renderstates.RoundedRectangleRenderState;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.ARGB;
 import org.joml.Matrix3x2f;
 import org.lwjgl.glfw.GLFW;
@@ -202,7 +202,7 @@ public class ClickGUI extends Screen {
     }
 
     @Override
-    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
+    public void extractRenderState(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
         if (dragging) {
             panelX = mouseX - dragOffsetX;
             panelY = mouseY - dragOffsetY;
@@ -1464,7 +1464,7 @@ public class ClickGUI extends Screen {
     }
 
     @Override
-    public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
+    public void extractBackground(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
     }
 
     @Override
@@ -1937,7 +1937,7 @@ public class ClickGUI extends Screen {
     private static void loadAssets() {
         if (spotifyLogo == null) {
             try {
-                Identifier id = Identifier.fromNamespaceAndPath("halo", "spotify-white-icon.png");
+                ResourceLocation id = ResourceLocation.fromNamespaceAndPath("halo", "spotify-white-icon.png");
                 spotifyLogo = new NVGImageRenderer(
                         Minecraft.getInstance().getResourceManager().open(id)
                 );
@@ -1948,7 +1948,7 @@ public class ClickGUI extends Screen {
         }
         if (spotifyLogoImage == null) {
             try {
-                Identifier id = Identifier.fromNamespaceAndPath("halo", "spotify-white-icon.png");
+                ResourceLocation id = ResourceLocation.fromNamespaceAndPath("halo", "spotify-white-icon.png");
                 spotifyLogoImage = ImageManager.fromIdentifier(id);
             } catch (Exception e) {
                 System.err.println("[ClickGUI] Failed to load spotifyLogoImage: " + e.getMessage());

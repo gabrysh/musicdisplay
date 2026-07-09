@@ -11,9 +11,9 @@ import com.haloclient.client.render.renderstates.BlurredRoundedRectangleRenderSt
 import com.haloclient.client.render.renderstates.ImageRenderState;
 import com.haloclient.client.render.renderstates.RoundedRectangleRenderState;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.ARGB;
 import org.joml.Matrix3x2f;
 
@@ -259,7 +259,7 @@ public final class MusicDisplayOverlay {
         scheduleSave();
     }
 
-    public static void render(GuiGraphicsExtractor graphics) {
+    public static void render(GuiGraphics graphics) {
         if (!visible) {
             return;
         }
@@ -1063,7 +1063,7 @@ public final class MusicDisplayOverlay {
     private static void loadAssets() {
         if (spotifyLogoImage == null) {
             try {
-                Identifier id = Identifier.fromNamespaceAndPath("halo", "spotify-white-icon.png");
+                ResourceLocation id = ResourceLocation.fromNamespaceAndPath("halo", "spotify-white-icon.png");
                 spotifyLogoImage = ImageManager.fromIdentifier(id);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -1072,7 +1072,7 @@ public final class MusicDisplayOverlay {
 
         if (settingsIcon == null) {
             try {
-                Identifier id = Identifier.fromNamespaceAndPath("halo", "icons8-settings-20.png");
+                ResourceLocation id = ResourceLocation.fromNamespaceAndPath("halo", "icons8-settings-20.png");
                 settingsIcon = new NVGImageRenderer(
                         Minecraft.getInstance().getResourceManager().open(id)
                 );
