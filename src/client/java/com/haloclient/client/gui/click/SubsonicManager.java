@@ -65,9 +65,15 @@ public final class SubsonicManager {
     private volatile SpotifyManager.MediaStatus currentStatus = SpotifyManager.MediaStatus.EMPTY;
     private volatile boolean polling = false;
 
-    // Client-side progress estimation
+    // Client-side progress estimation (server fallback mode)
     private String currentSongId = "";
     private long currentSongStartMs = 0L;
+
+    // Local MPRIS player (real position/pause/controls) — preferred over the server API when present.
+    private final LinuxMediaProvider mpris = new LinuxMediaProvider();
+    private volatile boolean mprisActive = false;
+    private volatile String mprisPlayer = null;
+    private volatile long mprisBaseTimeMs = 0L;
 
     private SubsonicManager() {
     }
@@ -77,11 +83,67 @@ public final class SubsonicManager {
     }
 
     public SpotifyManager.MediaStatus getStatus() {
-        return currentStatus;
+        SpotifyManager.MediaStatus s = currentStatus;
+        // In MPRIS mode, extrapolate the position between polls for a smooth, accurate bar.
+        if (mprisActive && s.isPlaying() && s.durationSeconds() > 0.0) {
+            double pos = Math.min(s.durationSeconds(),
+                    s.positionSeconds() + (System.currentTimeMillis() - mprisBaseTimeMs) / 1000.0);
+            return withPosition(s, pos);
+        }
+        return s;
+    }
+
+    private static SpotifyManager.MediaStatus withPosition(SpotifyManager.MediaStatus s, double pos) {
+        return new SpotifyManager.MediaStatus(s.title(), s.artist(), pos, s.durationSeconds(),
+                s.artworkPath(), s.trackId(), s.isPlaying(), s.shuffleState(), s.volumePercent(),
+                s.liked(), s.repeatState());
     }
 
     public boolean isConfigured() {
-        return authorized && !baseUrl.isBlank() && !username.isBlank();
+        // Configured either via the server credentials or an active local MPRIS player.
+        return (authorized && !baseUrl.isBlank() && !username.isBlank()) || mprisActive;
+    }
+
+    /** Whether playback can actually be controlled (only true when a local MPRIS player is driving). */
+    public boolean isMprisControllable() {
+        return mprisActive && mprisPlayer != null;
+    }
+
+    // ------------------------------------------------------------------
+    // MPRIS playback controls (Linux local player)
+    // ------------------------------------------------------------------
+
+    public void mprisTogglePlayPause() {
+        if (!isMprisControllable()) return;
+        String player = mprisPlayer;
+        // Optimistic UI flip until the next poll confirms it.
+        SpotifyManager.MediaStatus s = getStatus();
+        currentStatus = withPlaying(s, !s.isPlaying());
+        mprisBaseTimeMs = System.currentTimeMillis();
+        mpris.playPause(player);
+    }
+
+    public void mprisNext() {
+        if (isMprisControllable()) mpris.next(mprisPlayer);
+    }
+
+    public void mprisPrevious() {
+        if (isMprisControllable()) mpris.previous(mprisPlayer);
+    }
+
+    public void mprisSetVolume(int percent) {
+        if (!isMprisControllable()) return;
+        SpotifyManager.MediaStatus s = currentStatus;
+        currentStatus = new SpotifyManager.MediaStatus(s.title(), s.artist(), s.positionSeconds(),
+                s.durationSeconds(), s.artworkPath(), s.trackId(), s.isPlaying(), s.shuffleState(),
+                Math.max(0, Math.min(100, percent)), s.liked(), s.repeatState());
+        mpris.setVolume(mprisPlayer, percent);
+    }
+
+    private static SpotifyManager.MediaStatus withPlaying(SpotifyManager.MediaStatus s, boolean playing) {
+        return new SpotifyManager.MediaStatus(s.title(), s.artist(), s.positionSeconds(), s.durationSeconds(),
+                s.artworkPath(), s.trackId(), playing, s.shuffleState(), s.volumePercent(),
+                s.liked(), s.repeatState());
     }
 
     // ------------------------------------------------------------------
@@ -217,12 +279,8 @@ public final class SubsonicManager {
         EXECUTOR.execute(() -> {
             while (polling) {
                 try {
-                    if (isConfigured()) {
-                        poll();
-                    } else {
-                        currentStatus = SpotifyManager.MediaStatus.EMPTY;
-                    }
-                    Thread.sleep(2000L);
+                    poll();
+                    Thread.sleep(1000L);
                 } catch (InterruptedException e) {
                     break;
                 } catch (Exception e) {
@@ -233,6 +291,27 @@ public final class SubsonicManager {
     }
 
     private void poll() {
+        // 1) Prefer a local MPRIS player (real position, pause state, controls).
+        SpotifyManager.MediaStatus mp = mpris.poll();
+        if (mp != null) {
+            mprisActive = true;
+            mprisPlayer = mpris.lastPlayer();
+            mprisBaseTimeMs = System.currentTimeMillis();
+            currentStatus = mp;
+            return;
+        }
+        mprisActive = false;
+        mprisPlayer = null;
+
+        // 2) Fall back to the Subsonic server's getNowPlaying (position estimated).
+        if (!(authorized && !baseUrl.isBlank() && !username.isBlank())) {
+            currentStatus = SpotifyManager.MediaStatus.EMPTY;
+            return;
+        }
+        pollServer();
+    }
+
+    private void pollServer() {
         try {
             HttpClient client = HttpClient.newBuilder()
                     .followRedirects(HttpClient.Redirect.NORMAL)

@@ -158,40 +158,67 @@ public final class MusicManager {
         return SpotifyManager.isConfigured();
     }
 
-    /** Whether the active source supports interactive playback controls. */
+    /**
+     * Whether the active source supports interactive playback controls.
+     * Spotify always does; Subsonic only when a local MPRIS player is driving playback.
+     */
     public static boolean supportsControls() {
+        if (activeSource == Source.SUBSONIC) {
+            return SubsonicManager.getInstance().isMprisControllable();
+        }
         return activeSource == Source.SPOTIFY;
     }
 
+    private static boolean subsonicControllable() {
+        return activeSource == Source.SUBSONIC && SubsonicManager.getInstance().isMprisControllable();
+    }
+
     // ------------------------------------------------------------------
-    // Controls (Spotify only; no-ops for display-only sources)
+    // Controls (Spotify, or Subsonic via a local MPRIS player)
     // ------------------------------------------------------------------
 
     public static void togglePlayPause() {
-        if (supportsControls()) SpotifyManager.getInstance().togglePlayPause();
+        if (subsonicControllable()) {
+            SubsonicManager.getInstance().mprisTogglePlayPause();
+        } else if (activeSource == Source.SPOTIFY) {
+            SpotifyManager.getInstance().togglePlayPause();
+        }
     }
 
     public static void next() {
-        if (supportsControls()) SpotifyManager.getInstance().next();
+        if (subsonicControllable()) {
+            SubsonicManager.getInstance().mprisNext();
+        } else if (activeSource == Source.SPOTIFY) {
+            SpotifyManager.getInstance().next();
+        }
     }
 
     public static void previous() {
-        if (supportsControls()) SpotifyManager.getInstance().previous();
-    }
-
-    public static void toggleShuffle(boolean state) {
-        if (supportsControls()) SpotifyManager.getInstance().toggleShuffle(state);
-    }
-
-    public static void toggleLike() {
-        if (supportsControls()) SpotifyManager.getInstance().toggleLike();
-    }
-
-    public static void toggleRepeat() {
-        if (supportsControls()) SpotifyManager.getInstance().toggleRepeat();
+        if (subsonicControllable()) {
+            SubsonicManager.getInstance().mprisPrevious();
+        } else if (activeSource == Source.SPOTIFY) {
+            SpotifyManager.getInstance().previous();
+        }
     }
 
     public static void setVolume(int percent) {
-        if (supportsControls()) SpotifyManager.getInstance().setVolume(percent);
+        if (subsonicControllable()) {
+            SubsonicManager.getInstance().mprisSetVolume(percent);
+        } else if (activeSource == Source.SPOTIFY) {
+            SpotifyManager.getInstance().setVolume(percent);
+        }
+    }
+
+    // Shuffle / like / repeat are Spotify-only (not exposed via this integration path).
+    public static void toggleShuffle(boolean state) {
+        if (activeSource == Source.SPOTIFY) SpotifyManager.getInstance().toggleShuffle(state);
+    }
+
+    public static void toggleLike() {
+        if (activeSource == Source.SPOTIFY) SpotifyManager.getInstance().toggleLike();
+    }
+
+    public static void toggleRepeat() {
+        if (activeSource == Source.SPOTIFY) SpotifyManager.getInstance().toggleRepeat();
     }
 }
