@@ -1071,7 +1071,7 @@ public class ClickGUI extends Screen {
                     boolean subsonicSource = MusicManager.getActiveSource() == MusicManager.Source.SUBSONIC;
                     if (isHovered(mouseX, mouseY, playX - 5.0f, itemY, playBtnW + 10.0f, itemH)) {
                         if (subsonicSource) {
-                            SubsonicManager.getInstance().playSearchResult(track.id());
+                            SubsonicManager.getInstance().playSearchResult(track.id(), track.title(), track.artist(), track.localArtworkPath());
                         } else if (track.isPlaylist()) {
                             SpotifyManager.getInstance().playPlaylist(track.id());
                         } else {

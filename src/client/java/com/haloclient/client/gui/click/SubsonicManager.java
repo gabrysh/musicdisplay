@@ -75,6 +75,24 @@ public final class SubsonicManager {
     private volatile String mprisPlayer = null;
     private volatile long mprisBaseTimeMs = 0L;
 
+    // Internal audio player (ffplay) — lets the mod actually play a searched track. Highest precedence.
+    private static final ExecutorService PLAY_EXEC = Executors.newSingleThreadExecutor(runnable -> {
+        Thread thread = new Thread(runnable, "Halo Subsonic Player");
+        thread.setDaemon(true);
+        return thread;
+    });
+    private Process ffplayProcess;
+    private volatile boolean internalActive = false;
+    private volatile boolean internalPlaying = false;
+    private volatile String internalId = "";
+    private volatile String internalTitle = "";
+    private volatile String internalArtist = "";
+    private volatile String internalArtPath = "";
+    private volatile double internalDuration = 0.0;
+    private volatile double internalBasePos = 0.0;
+    private volatile long internalStartWall = 0L;
+    private volatile double internalPausedPos = 0.0;
+
     private SubsonicManager() {
     }
 
@@ -83,6 +101,11 @@ public final class SubsonicManager {
     }
 
     public SpotifyManager.MediaStatus getStatus() {
+        // The mod's own player takes precedence over MPRIS/server.
+        checkInternalEnded();
+        if (internalActive) {
+            return internalStatus();
+        }
         SpotifyManager.MediaStatus s = currentStatus;
         // In MPRIS mode, extrapolate the position between polls for a smooth, accurate bar.
         if (mprisActive && s.isPlaying() && s.durationSeconds() > 0.0) {
@@ -100,8 +123,8 @@ public final class SubsonicManager {
     }
 
     public boolean isConfigured() {
-        // Configured either via the server credentials or an active local MPRIS player.
-        return (authorized && !baseUrl.isBlank() && !username.isBlank()) || mprisActive;
+        // Configured via server credentials, an active MPRIS player, or the internal player.
+        return (authorized && !baseUrl.isBlank() && !username.isBlank()) || mprisActive || internalActive;
     }
 
     /** Whether playback can actually be controlled (only true when a local MPRIS player is driving). */
@@ -212,17 +235,133 @@ public final class SubsonicManager {
         }
     }
 
-    /**
-     * Best-effort "play" of a search result: asks the local MPRIS player to open the song's
-     * stream URL. Many library players ignore OpenUri, so this may be a no-op.
-     */
-    public void playSearchResult(String id) {
+    // ------------------------------------------------------------------
+    // Internal audio player (streams via ffplay)
+    // ------------------------------------------------------------------
+
+    public boolean isInternalActive() {
+        checkInternalEnded();
+        return internalActive;
+    }
+
+    /** Plays a searched song through the mod's own audio player (ffplay streaming the Subsonic URL). */
+    public void playSearchResult(String id, String title, String artist, String artPath) {
         if (id == null || id.isBlank()) return;
-        if (!isMprisControllable()) return;
         if (!(authorized && !baseUrl.isBlank() && !username.isBlank())) return;
-        String streamUrl = buildUrl("stream", "id=" + URLEncoder.encode(id, StandardCharsets.UTF_8),
+        PLAY_EXEC.execute(() -> {
+            double dur = fetchSongDuration(id);
+            synchronized (this) {
+                killFfplay();
+                internalId = id;
+                internalTitle = title != null ? title : "";
+                internalArtist = artist != null ? artist : "";
+                internalArtPath = artPath != null ? artPath : "";
+                internalDuration = dur;
+                internalPausedPos = 0.0;
+                startFfplay(0.0);
+                internalActive = true;
+                internalPlaying = true;
+            }
+        });
+    }
+
+    public synchronized void internalTogglePause() {
+        if (!internalActive) return;
+        if (internalPlaying) {
+            double pos = currentInternalPos();
+            killFfplay();
+            internalPausedPos = pos;
+            internalPlaying = false;
+        } else {
+            startFfplay(internalPausedPos);
+            internalPlaying = true;
+        }
+    }
+
+    public synchronized void internalStop() {
+        killFfplay();
+        internalActive = false;
+        internalPlaying = false;
+    }
+
+    private void startFfplay(double seekSec) {
+        String url = buildUrl("stream", "id=" + URLEncoder.encode(internalId, StandardCharsets.UTF_8),
                 username, password, baseUrl);
-        mpris.openUri(mprisPlayer, streamUrl);
+        try {
+            java.util.List<String> cmd = new java.util.ArrayList<>(java.util.List.of(
+                    "ffplay", "-nodisp", "-vn", "-autoexit", "-loglevel", "quiet"));
+            if (seekSec > 0.5) {
+                cmd.add("-ss");
+                cmd.add(String.valueOf((int) seekSec));
+            }
+            cmd.add("-i");
+            cmd.add(url);
+            ffplayProcess = new ProcessBuilder(cmd).redirectErrorStream(true).start();
+            internalBasePos = seekSec;
+            internalStartWall = System.currentTimeMillis();
+        } catch (Exception e) {
+            e.printStackTrace();
+            ffplayProcess = null;
+        }
+    }
+
+    private void killFfplay() {
+        if (ffplayProcess != null) {
+            try {
+                ffplayProcess.destroy();
+            } catch (Exception ignored) {
+            }
+            ffplayProcess = null;
+        }
+    }
+
+    private double currentInternalPos() {
+        double pos = internalPlaying
+                ? internalBasePos + (System.currentTimeMillis() - internalStartWall) / 1000.0
+                : internalPausedPos;
+        if (internalDuration > 0.0) pos = Math.min(pos, internalDuration);
+        return Math.max(0.0, pos);
+    }
+
+    private void checkInternalEnded() {
+        if (!internalActive || !internalPlaying) return;
+        boolean processDead = ffplayProcess != null && !ffplayProcess.isAlive();
+        boolean reachedEnd = internalDuration > 0.0 && currentInternalPos() >= internalDuration - 0.3;
+        if (processDead || reachedEnd) {
+            killFfplay();
+            internalActive = false;
+            internalPlaying = false;
+        }
+    }
+
+    private SpotifyManager.MediaStatus internalStatus() {
+        return new SpotifyManager.MediaStatus(internalTitle, internalArtist, currentInternalPos(),
+                internalDuration, internalArtPath, internalId, internalPlaying, false, 100, false, "off");
+    }
+
+    private double fetchSongDuration(String id) {
+        try {
+            HttpClient client = HttpClient.newBuilder()
+                    .version(HttpClient.Version.HTTP_1_1)
+                    .followRedirects(HttpClient.Redirect.NORMAL)
+                    .build();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(buildUrl("getSong", "id=" + URLEncoder.encode(id, StandardCharsets.UTF_8),
+                            username, password, baseUrl)))
+                    .GET().build();
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() == 200) {
+                JsonObject r = JsonParser.parseString(response.body()).getAsJsonObject()
+                        .getAsJsonObject("subsonic-response");
+                if (r != null && r.has("song")) {
+                    JsonObject song = r.getAsJsonObject("song");
+                    if (song.has("duration")) return song.get("duration").getAsDouble();
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return 0.0;
     }
 
     // ------------------------------------------------------------------
@@ -371,6 +510,12 @@ public final class SubsonicManager {
     }
 
     private void poll() {
+        // 0) The mod's own audio player wins over everything else.
+        checkInternalEnded();
+        if (internalActive) {
+            mprisActive = false;
+            return;
+        }
         // 1) Prefer a local MPRIS player (real position, pause state, controls).
         SpotifyManager.MediaStatus mp = mpris.poll();
         if (mp != null) {

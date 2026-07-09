@@ -87,6 +87,10 @@ public final class MusicManager {
 
     public static void cleanup() {
         try {
+            SubsonicManager.getInstance().internalStop();
+        } catch (Throwable ignored) {
+        }
+        try {
             SpotifyManager.getInstance().cleanOldArtworkCache();
         } catch (Throwable ignored) {
         }
@@ -165,46 +169,57 @@ public final class MusicManager {
      */
     public static boolean supportsControls() {
         if (activeSource == Source.SUBSONIC) {
-            return SubsonicManager.getInstance().isMprisControllable();
+            SubsonicManager sm = SubsonicManager.getInstance();
+            return sm.isInternalActive() || sm.isMprisControllable();
         }
         return activeSource == Source.SPOTIFY;
     }
 
-    private static boolean subsonicControllable() {
-        return activeSource == Source.SUBSONIC && SubsonicManager.getInstance().isMprisControllable();
-    }
-
     // ------------------------------------------------------------------
-    // Controls (Spotify, or Subsonic via a local MPRIS player)
+    // Controls (Spotify; Subsonic via the internal player or a local MPRIS player)
     // ------------------------------------------------------------------
 
     public static void togglePlayPause() {
-        if (subsonicControllable()) {
-            SubsonicManager.getInstance().mprisTogglePlayPause();
+        if (activeSource == Source.SUBSONIC) {
+            SubsonicManager sm = SubsonicManager.getInstance();
+            if (sm.isInternalActive()) {
+                sm.internalTogglePause();
+            } else if (sm.isMprisControllable()) {
+                sm.mprisTogglePlayPause();
+            }
         } else if (activeSource == Source.SPOTIFY) {
             SpotifyManager.getInstance().togglePlayPause();
         }
     }
 
     public static void next() {
-        if (subsonicControllable()) {
-            SubsonicManager.getInstance().mprisNext();
+        if (activeSource == Source.SUBSONIC) {
+            SubsonicManager sm = SubsonicManager.getInstance();
+            if (!sm.isInternalActive() && sm.isMprisControllable()) {
+                sm.mprisNext();
+            }
         } else if (activeSource == Source.SPOTIFY) {
             SpotifyManager.getInstance().next();
         }
     }
 
     public static void previous() {
-        if (subsonicControllable()) {
-            SubsonicManager.getInstance().mprisPrevious();
+        if (activeSource == Source.SUBSONIC) {
+            SubsonicManager sm = SubsonicManager.getInstance();
+            if (!sm.isInternalActive() && sm.isMprisControllable()) {
+                sm.mprisPrevious();
+            }
         } else if (activeSource == Source.SPOTIFY) {
             SpotifyManager.getInstance().previous();
         }
     }
 
     public static void setVolume(int percent) {
-        if (subsonicControllable()) {
-            SubsonicManager.getInstance().mprisSetVolume(percent);
+        if (activeSource == Source.SUBSONIC) {
+            SubsonicManager sm = SubsonicManager.getInstance();
+            if (!sm.isInternalActive() && sm.isMprisControllable()) {
+                sm.mprisSetVolume(percent);
+            }
         } else if (activeSource == Source.SPOTIFY) {
             SpotifyManager.getInstance().setVolume(percent);
         }
