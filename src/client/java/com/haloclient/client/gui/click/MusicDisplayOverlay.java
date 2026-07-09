@@ -239,10 +239,11 @@ public final class MusicDisplayOverlay {
         ScreenRectangle scissor = parentScissor != null ? parentScissor.intersection(cardBounds) : cardBounds;
 
         loadAssets();
-        SpotifyManager.MediaStatus status = SpotifyManager.getStatus();
-        boolean isConfigured = SpotifyManager.isConfigured();
-        String title = isConfigured ? (status.hasMedia() ? status.title() : "No media playing") : "Spotify not connected";
-        String artist = isConfigured ? (status.hasMedia() && !status.artist().isBlank() ? status.artist() : "Spotify API") : "Setup in ClickGUI";
+        SpotifyManager.MediaStatus status = MusicManager.getStatus();
+        boolean isConfigured = MusicManager.isConfigured();
+        String sourceName = MusicManager.sourceDisplayName();
+        String title = isConfigured ? (status.hasMedia() ? status.title() : "No media playing") : sourceName + " not connected";
+        String artist = isConfigured ? (status.hasMedia() && !status.artist().isBlank() ? status.artist() : sourceName) : "Setup in ClickGUI";
         ImageManager.CachedImage currentAlbumArt = isConfigured ? getAlbumArt(status.artworkPath()) : null;
         float progress = isConfigured ? status.progress() : 0.0f;
         float textX = localX + PADDING + COVER_SIZE + 7.0f;
@@ -573,7 +574,7 @@ public final class MusicDisplayOverlay {
         }
 
         // --- Next Song Card Rendering ---
-        SpotifyManager.NextTrack nextTrack = SpotifyManager.getNextTrack();
+        SpotifyManager.NextTrack nextTrack = MusicManager.getNextTrack();
         boolean hasNextSong = isConfigured && showNextSong && nextTrack != null && nextTrack.hasMedia();
         nextSongScaleAnimation.run(hasNextSong ? 1.0f : 0.0f);
         float nextSongScale = nextSongScaleAnimation.getValue();
@@ -1084,33 +1085,33 @@ public final class MusicDisplayOverlay {
             if (button == 0) {
                 // If controls are shown, check if clicking controls row (localMY >= 40.0)
                 if (showControls && heightAnimation.getValue() > 44.0f && localMY >= 40.0f) {
-                    SpotifyManager.MediaStatus status = SpotifyManager.getStatus();
-                    boolean isConfigured = SpotifyManager.isConfigured();
+                    SpotifyManager.MediaStatus status = MusicManager.getStatus();
+                    boolean isConfigured = MusicManager.isConfigured() && MusicManager.supportsControls();
 
                     // Left controls: Speaker icon (E) / Volume Slider
                     if (isConfigured && localMX >= 18.0f && localMX <= 48.0f && localMY >= 40.0f && localMY <= 58.0f) {
                         draggingVolume = true;
                         float pct = clamp((localMX - 18.0f) / 30.0f, 0.0f, 1.0f);
-                        SpotifyManager.getInstance().setVolume((int) (pct * 100));
+                        MusicManager.setVolume((int) (pct * 100));
                         return true;
                     }
                     if (isConfigured && localMX >= 6.0f && localMX <= 17.0f && localMY >= 40.0f && localMY <= 58.0f) {
-                        SpotifyManager.getInstance().setVolume(status.volumePercent() > 0 ? 0 : 50);
+                        MusicManager.setVolume(status.volumePercent() > 0 ? 0 : 50);
                         return true;
                     }
 
                     // Middle playback controls
                     if (isConfigured) {
                         if (localMX >= 88.0f- 5 && localMX <= 101.0f- 5 && localMY >= 40.0f && localMY <= 58.0f) {
-                            SpotifyManager.getInstance().togglePlayPause();
+                            MusicManager.togglePlayPause();
                             return true;
                         }
                         if (localMX >= 73.0f- 5 && localMX <= 87.0f- 5 && localMY >= 40.0f && localMY <= 58.0f) {
-                            SpotifyManager.getInstance().previous();
+                            MusicManager.previous();
                             return true;
                         }
                         if (localMX >= 102.0f- 5 && localMX <= 116.0f- 5 && localMY >= 40.0f && localMY <= 58.0f) {
-                            SpotifyManager.getInstance().next();
+                            MusicManager.next();
                             return true;
                         }
                     }
@@ -1118,15 +1119,15 @@ public final class MusicDisplayOverlay {
                     // Right controls: Shuffle / Like / Loop
                     if (isConfigured) {
                         if (localMX >= 160.0f && localMX <= 172.0f && localMY >= 40.0f && localMY <= 58.0f) {
-                            SpotifyManager.getInstance().toggleLike();
+                            MusicManager.toggleLike();
                             return true;
                         }
                         if (localMX >= 147.0f && localMX <= 159.0f && localMY >= 40.0f && localMY <= 58.0f) {
-                            SpotifyManager.getInstance().toggleShuffle(!status.shuffleState());
+                            MusicManager.toggleShuffle(!status.shuffleState());
                             return true;
                         }
                         if (localMX >= 134.0f && localMX <= 146.0f && localMY >= 40.0f && localMY <= 58.0f) {
-                            SpotifyManager.getInstance().toggleRepeat();
+                            MusicManager.toggleRepeat();
                             return true;
                         }
                     }
@@ -1172,7 +1173,7 @@ public final class MusicDisplayOverlay {
             float pivotX = x + WIDTH / 2.0f;
             float localMX = (float) ((mouseX - pivotX) / totalScale + WIDTH / 2.0f);
             float pct = clamp((localMX - 18.0f) / 30.0f, 0.0f, 1.0f);
-            SpotifyManager.getInstance().setVolume((int) (pct * 100));
+            MusicManager.setVolume((int) (pct * 100));
             return true;
         }
         if (dragging && button == 0) {

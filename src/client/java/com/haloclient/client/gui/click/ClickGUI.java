@@ -572,9 +572,9 @@ public class ClickGUI extends Screen {
             }
         }
 
-        // Extract Setup Spotify button if search is empty
+        // Extract Setup button (source-aware) if search is empty
         if (searchInputText.isEmpty()) {
-            if (!SpotifyManager.isConfigured()) {
+            if (!MusicManager.isConfigured()) {
                 float btnW = 80.0f;
                 float btnH = 15.0f;
                 float btnX = x + (WIDTH - btnW) / 2.0f;
@@ -606,10 +606,11 @@ public class ClickGUI extends Screen {
 
                 var statusFont = MsdfFontManager.getFont("productsans-semibold", 7.0f);
                 if (statusFont != null) {
-                    float textW = statusFont.getWidth("Setup Spotify", 7.0f);
+                    String setupLabel = "Setup " + MusicManager.sourceDisplayName();
+                    float textW = statusFont.getWidth(setupLabel, 7.0f);
                     graphics.guiRenderState.addGuiElement(new HaloFontRenderState(
                             statusFont,
-                            "Setup Spotify",
+                            setupLabel,
                             new Matrix3x2f(pose),
                             btnX + btnW / 2.0f - textW / 2.0f,
                             btnY + btnH / 2.0f - statusFont.getHeight(7.0f) / 2.0f,
@@ -1340,18 +1341,29 @@ public class ClickGUI extends Screen {
                 return true;
             }
 
-            // Setup Spotify button click
-            if (!SpotifyManager.isConfigured()) {
+            // Setup button click (source-aware)
+            if (!MusicManager.isConfigured()) {
                 float btnW = 80.0f;
                 float btnH = 15.0f;
                 float btnX = x + (WIDTH - btnW) / 2.0f;
                 float btnY = y + HEIGHT - btnH - PADDING;
                 if (isHovered(mouseX, mouseY, btnX, btnY, btnW, btnH)) {
-                    SpotifyManager.getInstance().startSetupServer();
-                    openUrl("http://127.0.0.1:8888/setup");
+                    if (MusicManager.getActiveSource() == MusicManager.Source.SUBSONIC) {
+                        SubsonicManager.getInstance().startSetupServer();
+                        openUrl("http://127.0.0.1:8889/setup");
+                    } else {
+                        SpotifyManager.getInstance().startSetupServer();
+                        openUrl("http://127.0.0.1:8888/setup");
+                    }
                     return true;
                 }
             }
+        }
+
+        // Right-click the header strip toggles the active music source (Spotify <-> Subsonic)
+        if (button == 1 && isHovered(rawMouseX, rawMouseY, x, y, WIDTH, 25.0f)) {
+            MusicManager.toggleSource();
+            return true;
         }
 
         // Dragging window check (using raw coordinates)
