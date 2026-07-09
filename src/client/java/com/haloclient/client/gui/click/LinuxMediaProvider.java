@@ -73,26 +73,49 @@ final class LinuxMediaProvider {
         }
     }
 
-    /** Picks the most relevant player: a real MPRIS app (not playerctld), preferring one that is Playing. */
-    private String pickPlayer() {
+    /** Lists real MPRIS players (excluding the playerctld proxy). */
+    private List<String> listPlayers() {
+        List<String> players = new ArrayList<>();
         String names = run("gdbus", "call", "--session", "--dest", "org.freedesktop.DBus",
                 "--object-path", "/org/freedesktop/DBus",
                 "--method", "org.freedesktop.DBus.ListNames");
-        if (names.isBlank()) return null;
-        List<String> players = new ArrayList<>();
+        if (names.isBlank()) return players;
         Matcher m = MPRIS_NAME.matcher(names);
         while (m.find()) {
             String name = m.group();
             if (name.endsWith(".playerctld")) continue;
             if (!players.contains(name)) players.add(name);
         }
+        return players;
+    }
+
+    /** Picks the most relevant player: a real MPRIS app (not playerctld), preferring one that is Playing. */
+    private String pickPlayer() {
         String firstPaused = null;
-        for (String name : players) {
+        for (String name : listPlayers()) {
             String status = playbackStatus(name);
             if ("Playing".equals(status)) return name;
             if (firstPaused == null && "Paused".equals(status)) firstPaused = name;
         }
+        List<String> players = listPlayers();
         return firstPaused != null ? firstPaused : (players.isEmpty() ? null : players.get(0));
+    }
+
+    /** Returns a player currently in the Playing state, or null. */
+    String playingPlayer() {
+        for (String name : listPlayers()) {
+            if ("Playing".equals(playbackStatus(name))) return name;
+        }
+        return null;
+    }
+
+    void pause(String player) {
+        if (player != null) callMethod(player, "Pause");
+    }
+
+    /** Pauses whichever player is currently playing (used to avoid double audio). */
+    void pauseActive() {
+        pause(playingPlayer());
     }
 
     private String playbackStatus(String player) {

@@ -95,6 +95,7 @@ public final class SubsonicManager {
     private volatile int internalVolume = 100;
     private volatile String sinkInputIndex = null;
     private long lastVolApplyMs = 0L;
+    private volatile long internalPlayStartMs = 0L;
 
     private SubsonicManager() {
     }
@@ -252,6 +253,8 @@ public final class SubsonicManager {
         if (id == null || id.isBlank()) return;
         if (!(authorized && !baseUrl.isBlank() && !username.isBlank())) return;
         PLAY_EXEC.execute(() -> {
+            // Pause the user's real client (e.g. Feishin) so the audio doesn't double up.
+            mpris.pauseActive();
             double dur = fetchSongDuration(id);
             synchronized (this) {
                 killFfplay();
@@ -264,6 +267,7 @@ public final class SubsonicManager {
                 startFfplay(0.0);
                 internalActive = true;
                 internalPlaying = true;
+                internalPlayStartMs = System.currentTimeMillis();
             }
         });
     }
@@ -601,11 +605,17 @@ public final class SubsonicManager {
     }
 
     private void poll() {
-        // 0) The mod's own audio player wins over everything else.
+        // 0) The mod's own audio player wins — unless the user starts playback in their real
+        //    client (a local MPRIS player goes Playing), in which case hand control back to it.
         checkInternalEnded();
         if (internalActive) {
-            mprisActive = false;
-            return;
+            boolean pastGrace = System.currentTimeMillis() - internalPlayStartMs > 2000L;
+            if (pastGrace && mpris.playingPlayer() != null) {
+                internalStop();
+            } else {
+                mprisActive = false;
+                return;
+            }
         }
         // 1) Prefer a local MPRIS player (real position, pause state, controls).
         SpotifyManager.MediaStatus mp = mpris.poll();
