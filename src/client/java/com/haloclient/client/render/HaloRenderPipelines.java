@@ -9,9 +9,9 @@ import net.minecraft.resources.ResourceLocation;
 
 public class HaloRenderPipelines {
     
-    public static final VertexFormatElement CUSTOM_DATA = VertexFormatElement.register(7, 0, VertexFormatElement.Type.FLOAT, VertexFormatElement.Usage.GENERIC, 4);
-    public static final VertexFormatElement COLOR2 = VertexFormatElement.register(8, 0, VertexFormatElement.Type.UBYTE, VertexFormatElement.Usage.GENERIC, 4);
-    public static final VertexFormatElement SHADOW_PROPS = VertexFormatElement.register(9, 0, VertexFormatElement.Type.FLOAT, VertexFormatElement.Usage.GENERIC, 4);
+    public static final VertexFormatElement CUSTOM_DATA = VertexFormatElement.register(29, 0, VertexFormatElement.Type.FLOAT, VertexFormatElement.Usage.GENERIC, 4);
+    public static final VertexFormatElement COLOR2 = VertexFormatElement.register(30, 0, VertexFormatElement.Type.UBYTE, VertexFormatElement.Usage.GENERIC, 4);
+    public static final VertexFormatElement SHADOW_PROPS = VertexFormatElement.register(31, 0, VertexFormatElement.Type.FLOAT, VertexFormatElement.Usage.GENERIC, 4);
     
     public static final VertexFormat ROUNDED_RECT_FORMAT = VertexFormat.builder()
             .add("Position", VertexFormatElement.POSITION)
