@@ -92,6 +92,9 @@ public final class SubsonicManager {
     private volatile double internalBasePos = 0.0;
     private volatile long internalStartWall = 0L;
     private volatile double internalPausedPos = 0.0;
+    private volatile int internalVolume = 100;
+    private volatile String sinkInputIndex = null;
+    private long lastVolApplyMs = 0L;
 
     private SubsonicManager() {
     }
@@ -266,14 +269,16 @@ public final class SubsonicManager {
     }
 
     public synchronized void internalTogglePause() {
-        if (!internalActive) return;
+        if (!internalActive || ffplayProcess == null) return;
         if (internalPlaying) {
-            double pos = currentInternalPos();
-            killFfplay();
-            internalPausedPos = pos;
+            // Freeze the process (instant, no re-buffering) instead of killing/restarting.
+            internalPausedPos = currentInternalPos();
+            signalFfplay("STOP");
             internalPlaying = false;
         } else {
-            startFfplay(internalPausedPos);
+            signalFfplay("CONT");
+            internalBasePos = internalPausedPos;
+            internalStartWall = System.currentTimeMillis();
             internalPlaying = true;
         }
     }
@@ -282,6 +287,15 @@ public final class SubsonicManager {
         killFfplay();
         internalActive = false;
         internalPlaying = false;
+        sinkInputIndex = null;
+    }
+
+    private void signalFfplay(String signal) {
+        if (ffplayProcess == null || !ffplayProcess.isAlive()) return;
+        try {
+            new ProcessBuilder("kill", "-" + signal, String.valueOf(ffplayProcess.pid())).start();
+        } catch (Exception ignored) {
+        }
     }
 
     private void startFfplay(double seekSec) {
@@ -296,13 +310,90 @@ public final class SubsonicManager {
             }
             cmd.add("-i");
             cmd.add(url);
+            java.util.Set<String> before = pactlSinkInputIndices();
+            sinkInputIndex = null;
             ffplayProcess = new ProcessBuilder(cmd).redirectErrorStream(true).start();
             internalBasePos = seekSec;
             internalStartWall = System.currentTimeMillis();
+            // Identify our PulseAudio sink-input (the newly appearing one) to control its volume.
+            PLAY_EXEC.execute(() -> locateSinkInput(before));
         } catch (Exception e) {
             e.printStackTrace();
             ffplayProcess = null;
         }
+    }
+
+    // ------------------------------------------------------------------
+    // Internal player volume (via pactl on the ffplay sink-input)
+    // ------------------------------------------------------------------
+
+    public void setInternalVolume(int percent) {
+        internalVolume = Math.max(0, Math.min(100, percent));
+        long now = System.currentTimeMillis();
+        if (now - lastVolApplyMs > 100L) {
+            lastVolApplyMs = now;
+            applyPactlVolume(internalVolume);
+        }
+    }
+
+    private void applyPactlVolume(int percent) {
+        String idx = sinkInputIndex;
+        if (idx == null) return;
+        try {
+            new ProcessBuilder("pactl", "set-sink-input-volume", idx, percent + "%").start();
+        } catch (Exception ignored) {
+        }
+    }
+
+    private void locateSinkInput(java.util.Set<String> before) {
+        for (int i = 0; i < 20 && internalActive && sinkInputIndex == null; i++) {
+            try {
+                Thread.sleep(150L);
+            } catch (InterruptedException e) {
+                return;
+            }
+            java.util.Set<String> now = pactlSinkInputIndices();
+            now.removeAll(before);
+            if (!now.isEmpty()) {
+                // The highest index is the most recently created (our ffplay).
+                String best = null;
+                long bestVal = -1;
+                for (String s : now) {
+                    try {
+                        long v = Long.parseLong(s);
+                        if (v > bestVal) {
+                            bestVal = v;
+                            best = s;
+                        }
+                    } catch (NumberFormatException ignored) {
+                    }
+                }
+                sinkInputIndex = best;
+                applyPactlVolume(internalVolume);
+                return;
+            }
+        }
+    }
+
+    private java.util.Set<String> pactlSinkInputIndices() {
+        java.util.Set<String> indices = new java.util.HashSet<>();
+        try {
+            Process p = new ProcessBuilder("pactl", "list", "short", "sink-inputs")
+                    .redirectErrorStream(true).start();
+            try (java.io.BufferedReader reader = new java.io.BufferedReader(
+                    new java.io.InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    String trimmed = line.trim();
+                    int tab = trimmed.indexOf('\t');
+                    String idx = tab > 0 ? trimmed.substring(0, tab) : trimmed;
+                    if (!idx.isBlank()) indices.add(idx.trim());
+                }
+            }
+            p.waitFor(2, java.util.concurrent.TimeUnit.SECONDS);
+        } catch (Exception ignored) {
+        }
+        return indices;
     }
 
     private void killFfplay() {
@@ -336,7 +427,7 @@ public final class SubsonicManager {
 
     private SpotifyManager.MediaStatus internalStatus() {
         return new SpotifyManager.MediaStatus(internalTitle, internalArtist, currentInternalPos(),
-                internalDuration, internalArtPath, internalId, internalPlaying, false, 100, false, "off");
+                internalDuration, internalArtPath, internalId, internalPlaying, false, internalVolume, false, "off");
     }
 
     private double fetchSongDuration(String id) {

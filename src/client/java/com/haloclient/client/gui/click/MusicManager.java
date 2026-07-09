@@ -217,7 +217,9 @@ public final class MusicManager {
     public static void setVolume(int percent) {
         if (activeSource == Source.SUBSONIC) {
             SubsonicManager sm = SubsonicManager.getInstance();
-            if (!sm.isInternalActive() && sm.isMprisControllable()) {
+            if (sm.isInternalActive()) {
+                sm.setInternalVolume(percent);
+            } else if (sm.isMprisControllable()) {
                 sm.mprisSetVolume(percent);
             }
         } else if (activeSource == Source.SPOTIFY) {
