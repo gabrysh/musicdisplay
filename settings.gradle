@@ -4,10 +4,29 @@ pluginManagement {
 			name = 'Fabric'
 			url = 'https://maven.fabricmc.net/'
 		}
+		maven {
+			name = 'Kikugie'
+			url = 'https://maven.kikugie.dev/releases'
+		}
+		maven {
+			name = 'KikugieSnapshots'
+			url = 'https://maven.kikugie.dev/snapshots'
+		}
 		mavenCentral()
 		gradlePluginPortal()
 	}
 }
 
+plugins {
+	id 'dev.kikugie.stonecutter' version '0.9.6'
+}
+
 // Should match your modid
 rootProject.name = 'musicdisplay'
+
+stonecutter {
+	create(rootProject) {
+		versions('1.21.10', '1.21.11', '26.1.2')
+		vcsVersion = '26.1.2'
+	}
+}

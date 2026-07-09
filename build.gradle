@@ -7,6 +7,17 @@ plugins {
 version = project.mod_version
 group = project.maven_group
 
+// --- Multi-version (Stonecutter) dependency matrix ---
+def mcVersions = [
+		"26.1.2" : [ minecraft: "26.1.2",  loader: "0.19.3", fapi: "0.154.2+26.1.2",  javaVersion: 25, mojmap: false ],
+		"1.21.11": [ minecraft: "1.21.11", loader: "0.19.3", fapi: "0.141.4+1.21.11", javaVersion: 21, mojmap: true  ],
+		"1.21.10": [ minecraft: "1.21.10", loader: "0.19.3", fapi: "0.138.4+1.21.10", javaVersion: 21, mojmap: true  ],
+]
+def active = mcVersions[stonecutter.current.version]
+if (active == null) {
+	throw new GradleException("No dependency matrix entry for Stonecutter version '${stonecutter.current.version}'")
+}
+
 repositories {
 	maven {
 		url 'https://repo.hypixel.net/repository/Hypixel'
@@ -43,12 +54,21 @@ configurations {
 }
 
 dependencies {
-	// To change the versions see the gradle.properties file
-	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	minecraft "com.mojang:minecraft:${active.minecraft}"
+	// 26.1+ is unobfuscated (no mappings needed); older versions use official Mojang mappings.
+	// NOTE: building the obfuscated 1.21.x nodes requires Loom 1.14 (per-node loom version, TODO);
+	// Loom 1.15 rejects Mojang mappings there. Guarded so the 26.1.2 node still configures/builds.
+	if (active.mojmap) {
+		try {
+			mappings loom.officialMojangMappings()
+		} catch (Exception e) {
+			logger.warn("[multiversion] Mojang mappings unavailable for ${active.minecraft} with this Loom (needs Loom 1.14): ${e.message}")
+		}
+	}
+	implementation "net.fabricmc:fabric-loader:${active.loader}"
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
-	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+	implementation "net.fabricmc.fabric-api:fabric-api:${active.fapi}"
 	shadow "org.lwjgl:lwjgl-nanovg:${lwjglVersion}"
 	include "org.lwjgl:lwjgl-nanovg:${lwjglVersion}"
 	shadow "org.lwjgl:lwjgl-nanovg:${lwjglVersion}:natives-windows"
@@ -72,7 +92,7 @@ processResources {
 }
 
 tasks.withType(JavaCompile).configureEach {
-	it.options.release = 25
+	it.options.release = active.javaVersion
 }
 
 java {
@@ -81,8 +101,8 @@ java {
 	// If you remove this line, sources will not be generated.
 	withSourcesJar()
 
-	sourceCompatibility = JavaVersion.VERSION_25
-	targetCompatibility = JavaVersion.VERSION_25
+	sourceCompatibility = JavaVersion.toVersion(active.javaVersion)
+	targetCompatibility = JavaVersion.toVersion(active.javaVersion)
 }
 
 jar {
