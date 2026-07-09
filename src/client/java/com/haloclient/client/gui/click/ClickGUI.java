@@ -1995,6 +1995,13 @@ public class ClickGUI extends Screen {
         }
     }
 
+    @Override
+    public void removed() {
+        // Persist any settings changed in the GUI (colors, gui size, toggles, sliders).
+        MusicDisplayOverlay.scheduleSave();
+        super.removed();
+    }
+
     private static void openUrl(String url) {
         try {
             String os = System.getProperty("os.name").toLowerCase();

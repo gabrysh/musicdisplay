@@ -48,6 +48,7 @@ final class LinuxMediaProvider {
     boolean isAvailable() {
         if (available == null) {
             available = System.getProperty("os.name", "").toLowerCase().contains("linux") && commandExists();
+            System.out.println("[Halo/MPRIS] gdbus available: " + available);
         }
         return available;
     }
@@ -98,6 +99,9 @@ final class LinuxMediaProvider {
     SpotifyManager.MediaStatus poll() {
         if (!isAvailable()) return null;
         String player = pickPlayer();
+        if (!java.util.Objects.equals(player, lastPlayer)) {
+            System.out.println("[Halo/MPRIS] active player: " + (player == null ? "none" : player));
+        }
         lastPlayer = player;
         if (player == null) return null;
 

@@ -77,6 +77,7 @@ public final class MusicManager {
         loadSourcePreference();
         SpotifyManager.getInstance().load();
         SubsonicManager.getInstance().load();
+        MusicDisplayOverlay.loadSettings();
     }
 
     public static void startPolling() {

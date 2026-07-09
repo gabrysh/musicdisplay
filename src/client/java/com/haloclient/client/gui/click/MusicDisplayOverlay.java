@@ -98,6 +98,98 @@ public final class MusicDisplayOverlay {
     private MusicDisplayOverlay() {
     }
 
+    // ------------------------------------------------------------------
+    // Settings persistence (size, position, enabled state, colors...)
+    // ------------------------------------------------------------------
+
+    private static final java.util.concurrent.ExecutorService SETTINGS_EXEC =
+            java.util.concurrent.Executors.newSingleThreadExecutor(r -> {
+                Thread t = new Thread(r, "Halo Overlay Settings");
+                t.setDaemon(true);
+                return t;
+            });
+    private static volatile boolean settingsLoaded = false;
+
+    private static java.io.File settingsFile() {
+        return new java.io.File(Minecraft.getInstance().gameDirectory, "config/musicdisplay-overlay.json");
+    }
+
+    /** Persists the overlay settings (debounced onto a background thread to avoid render-thread IO). */
+    public static void scheduleSave() {
+        if (!settingsLoaded) return; // avoid clobbering the file before the initial load
+        SETTINGS_EXEC.execute(MusicDisplayOverlay::saveSettingsNow);
+    }
+
+    private static synchronized void saveSettingsNow() {
+        com.google.gson.JsonObject json = new com.google.gson.JsonObject();
+        json.addProperty("enabled", isOpened());
+        json.addProperty("userScale", targetUserScale);
+        if (!Float.isNaN(relativeX)) json.addProperty("posX", relativeX);
+        if (!Float.isNaN(relativeY)) json.addProperty("posY", relativeY);
+        json.addProperty("showControls", showControls);
+        json.addProperty("showNextSong", showNextSong);
+        json.addProperty("blur", blurStrength);
+        json.addProperty("bloom", bloomStrength);
+        json.addProperty("backgroundType", backgroundType.name());
+        json.addProperty("backgroundColor", backgroundColor);
+        json.addProperty("titleColor", titleColor);
+        json.addProperty("artistColor", artistColor);
+        json.addProperty("timeColor", timeColor);
+        json.addProperty("progressColor", progressColor);
+        json.addProperty("guiScale", ClickGUI.guiScale);
+        try {
+            java.io.File f = settingsFile();
+            if (f.getParentFile() != null && !f.getParentFile().exists()) f.getParentFile().mkdirs();
+            try (java.io.Writer w = new java.io.FileWriter(f, java.nio.charset.StandardCharsets.UTF_8)) {
+                new com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(json, w);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /** Loads persisted overlay settings. Call once at startup. */
+    public static void loadSettings() {
+        try {
+            java.io.File f = settingsFile();
+            if (f.exists()) {
+                com.google.gson.JsonObject json;
+                try (java.io.Reader r = new java.io.FileReader(f, java.nio.charset.StandardCharsets.UTF_8)) {
+                    json = com.google.gson.JsonParser.parseReader(r).getAsJsonObject();
+                }
+                if (json.has("userScale")) {
+                    targetUserScale = json.get("userScale").getAsFloat();
+                    userScaleAnimation.setStartValue(targetUserScale);
+                    userScaleAnimation.setValue(targetUserScale);
+                }
+                if (json.has("posX")) relativeX = json.get("posX").getAsFloat();
+                if (json.has("posY")) relativeY = json.get("posY").getAsFloat();
+                if (json.has("showControls")) showControls = json.get("showControls").getAsBoolean();
+                if (json.has("showNextSong")) showNextSong = json.get("showNextSong").getAsBoolean();
+                if (json.has("blur")) blurStrength = json.get("blur").getAsFloat();
+                if (json.has("bloom")) bloomStrength = json.get("bloom").getAsFloat();
+                if (json.has("backgroundType")) {
+                    try {
+                        backgroundType = BackgroundType.valueOf(json.get("backgroundType").getAsString());
+                    } catch (Exception ignored) {
+                    }
+                }
+                if (json.has("backgroundColor")) backgroundColor = json.get("backgroundColor").getAsInt();
+                if (json.has("titleColor")) titleColor = json.get("titleColor").getAsInt();
+                if (json.has("artistColor")) artistColor = json.get("artistColor").getAsInt();
+                if (json.has("timeColor")) timeColor = json.get("timeColor").getAsInt();
+                if (json.has("progressColor")) progressColor = json.get("progressColor").getAsInt();
+                if (json.has("guiScale")) ClickGUI.guiScale = json.get("guiScale").getAsFloat();
+                if (json.has("enabled") && json.get("enabled").getAsBoolean()) {
+                    setVisible(true);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        settingsLoaded = true;
+    }
+
     public static boolean isVisible() {
         return visible;
     }
@@ -119,6 +211,7 @@ public final class MusicDisplayOverlay {
             scaleAnimation.setStartValue(scaleAnimation.getValue());
             scaleAnimation.reset();
         }
+        scheduleSave();
     }
 
     public static boolean isShowControls() {
@@ -127,6 +220,7 @@ public final class MusicDisplayOverlay {
 
     public static void setShowControls(boolean value) {
         showControls = value;
+        scheduleSave();
     }
 
     public static boolean isShowNextSong() {
@@ -135,6 +229,7 @@ public final class MusicDisplayOverlay {
 
     public static void setShowNextSong(boolean value) {
         showNextSong = value;
+        scheduleSave();
     }
 
     public static float getBlurStrength() {
@@ -143,6 +238,7 @@ public final class MusicDisplayOverlay {
 
     public static void setBlurStrength(float value) {
         blurStrength = clamp(value, 0.0f, 30.0f);
+        scheduleSave();
     }
 
     public static float getBloomStrength() {
@@ -151,6 +247,7 @@ public final class MusicDisplayOverlay {
 
     public static void setBloomStrength(float value) {
         bloomStrength = clamp(value, 0.0f, 20.0f);
+        scheduleSave();
     }
 
     public static BackgroundType getBackgroundType() {
@@ -159,6 +256,7 @@ public final class MusicDisplayOverlay {
 
     public static void setBackgroundType(BackgroundType value) {
         backgroundType = value;
+        scheduleSave();
     }
 
     public static void render(GuiGraphicsExtractor graphics) {
@@ -1241,6 +1339,7 @@ public final class MusicDisplayOverlay {
         }
         if (dragging && button == 0) {
             dragging = false;
+            scheduleSave();
             return true;
         }
         return false;
@@ -1259,6 +1358,7 @@ public final class MusicDisplayOverlay {
 
         if (mouseX >= currentX && mouseX <= currentX + currentW && mouseY >= currentY && mouseY <= currentY + currentH) {
             targetUserScale = clamp(targetUserScale + (float) scrollY * 0.05f, 0.4f, 2.5f);
+            scheduleSave();
             return true;
         }
         return false;
