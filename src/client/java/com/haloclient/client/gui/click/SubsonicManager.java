@@ -96,6 +96,9 @@ public final class SubsonicManager {
     private volatile String sinkInputIndex = null;
     private long lastVolApplyMs = 0L;
     private volatile long internalPlayStartMs = 0L;
+    // Authoritative playback position parsed from ffplay's -stats output (re-syncs the bar).
+    private volatile double internalRealPos = -1.0;
+    private volatile long internalRealPosWall = 0L;
 
     private SubsonicManager() {
     }
@@ -283,6 +286,7 @@ public final class SubsonicManager {
             signalFfplay("CONT");
             internalBasePos = internalPausedPos;
             internalStartWall = System.currentTimeMillis();
+            internalRealPosWall = System.currentTimeMillis();
             internalPlaying = true;
         }
     }
@@ -307,7 +311,7 @@ public final class SubsonicManager {
                 username, password, baseUrl);
         try {
             java.util.List<String> cmd = new java.util.ArrayList<>(java.util.List.of(
-                    "ffplay", "-nodisp", "-vn", "-autoexit", "-loglevel", "quiet"));
+                    "ffplay", "-nodisp", "-vn", "-autoexit", "-loglevel", "error", "-stats"));
             if (seekSec > 0.5) {
                 cmd.add("-ss");
                 cmd.add(String.valueOf((int) seekSec));
@@ -316,15 +320,44 @@ public final class SubsonicManager {
             cmd.add(url);
             java.util.Set<String> before = pactlSinkInputIndices();
             sinkInputIndex = null;
-            ffplayProcess = new ProcessBuilder(cmd).redirectErrorStream(true).start();
+            internalRealPos = -1.0;
+            Process proc = new ProcessBuilder(cmd).redirectErrorStream(true).start();
+            ffplayProcess = proc;
             internalBasePos = seekSec;
             internalStartWall = System.currentTimeMillis();
+            startStatsReader(proc);
             // Identify our PulseAudio sink-input (the newly appearing one) to control its volume.
             PLAY_EXEC.execute(() -> locateSinkInput(before));
         } catch (Exception e) {
             e.printStackTrace();
             ffplayProcess = null;
         }
+    }
+
+    /** Reads ffplay's -stats output ("  12.34 M-A: ...") to track the true playback position. */
+    private void startStatsReader(Process proc) {
+        Thread t = new Thread(() -> {
+            try (java.io.BufferedReader reader = new java.io.BufferedReader(
+                    new java.io.InputStreamReader(proc.getInputStream(), StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    String s = line.trim();
+                    int sp = s.indexOf(' ');
+                    if (sp <= 0) continue;
+                    try {
+                        double pos = Double.parseDouble(s.substring(0, sp));
+                        if (proc == ffplayProcess) {
+                            internalRealPos = pos;
+                            internalRealPosWall = System.currentTimeMillis();
+                        }
+                    } catch (NumberFormatException ignored) {
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+        }, "Halo ffplay stats");
+        t.setDaemon(true);
+        t.start();
     }
 
     // ------------------------------------------------------------------
@@ -411,9 +444,18 @@ public final class SubsonicManager {
     }
 
     private double currentInternalPos() {
-        double pos = internalPlaying
-                ? internalBasePos + (System.currentTimeMillis() - internalStartWall) / 1000.0
-                : internalPausedPos;
+        double pos;
+        if (!internalPlaying) {
+            pos = internalPausedPos;
+        } else if (internalRealPos >= 0.0) {
+            // Authoritative ffplay clock + a little extrapolation between stats lines. Capped so a
+            // network stall (stats stop updating) can't let the bar run away before it re-syncs.
+            double since = (System.currentTimeMillis() - internalRealPosWall) / 1000.0;
+            since = Math.max(0.0, Math.min(1.0, since));
+            pos = internalRealPos + since;
+        } else {
+            pos = internalBasePos + (System.currentTimeMillis() - internalStartWall) / 1000.0;
+        }
         if (internalDuration > 0.0) pos = Math.min(pos, internalDuration);
         return Math.max(0.0, pos);
     }
