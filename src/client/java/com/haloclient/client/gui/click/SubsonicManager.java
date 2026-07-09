@@ -358,7 +358,9 @@ public final class SubsonicManager {
             HttpClient client = HttpClient.newBuilder()
                     .followRedirects(HttpClient.Redirect.NORMAL)
                     .build();
-            String url = buildUrl("getCoverArt", "id=" + URLEncoder.encode(coverArtId, StandardCharsets.UTF_8) + "&size=300",
+            // NOTE: do not send "size" — with a size param some servers (e.g. Navidrome) return
+            // WebP, which the STB image loader cannot decode. The original is JPEG/PNG.
+            String url = buildUrl("getCoverArt", "id=" + URLEncoder.encode(coverArtId, StandardCharsets.UTF_8),
                     username, password, baseUrl);
             HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).build();
             File tempFile = new File(Minecraft.getInstance().gameDirectory, "config/subsonic-art-temp-" + hash + ".png");
